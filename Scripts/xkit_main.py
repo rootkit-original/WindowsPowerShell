@@ -124,87 +124,136 @@ class XKitV3Application:
             print(f"⚠️  Async services initialization failed: {e}")
     
     async def run_async(self, args: List[str]) -> None:
-        """Main entry point for XKit v3.0 operations"""
-        # Initialize async services if needed
-        await self._initialize_async_services()
-        
+        """Main entry point for XKit v3.0 operations with 'xkit <command> <params>' structure"""
         if not args:
             self._show_help()
             return
-            
-        action = args[0].lower()
-        context_args = args[1:] if len(args) > 1 else []
+        
+        # New standardized structure: xkit <command> <params>
+        # Handle both legacy direct calls and new xkit prefix structure
+        if args[0].lower() == "xkit" and len(args) > 1:
+            # New format: xkit <command> <params>
+            command = args[1].lower()
+            params = args[2:] if len(args) > 2 else []
+        else:
+            # Legacy format: <command> <params> (for backward compatibility)
+            command = args[0].lower()
+            params = args[1:] if len(args) > 1 else []
         
         try:
             if self.hybrid_available and self.app:
-                await self._run_hybrid_command(action, context_args)
+                await self._run_hybrid_command(command, params)
             else:
-                await self._run_legacy_command(action, context_args)
+                await self._run_legacy_command(command, params)
                 
         except Exception as e:
             print(f"❌ XKit Error: {e}")
             if self.hybrid_available:
-                print("🔧 Use 'xkit debug system' for detailed diagnostics")
+                print("🔧 Use 'xkit debug' for detailed diagnostics")
             
-    async def _run_hybrid_command(self, action: str, args: List[str]) -> None:
-        """Run command using hybrid MCP architecture"""
+    async def _run_hybrid_command(self, command: str, params: List[str]) -> None:
+        """Run command using hybrid MCP architecture with standardized xkit command structure"""
         # Start application if not running
         if not self.app.is_running:
             await self.app.start()
         
-        # Map ALL XKit commands - comprehensive mapping
+        # Standardized XKit command mapping with consistent naming
         command_mapping = {
-            # Core commands
-            "xkit-help": "help",
+            # Core commands (xkit <command>)
             "help": "help",
-            "show-help": "help",
-            "xkit-status": "status", 
             "status": "status",
-            "show-status": "status",
-            "xkit-version": "version",
             "version": "version",
-            "show-version": "version",
-            "xkit-reload": "reload",
+            "reload": "reload",
+            "config": "config",
+            "init": "system-init",
             
-            # MCP commands
-            "mcp-status": "mcp-status",
-            "mcp-servers": "mcp-servers", 
-            "mcp-tools": "mcp-tools",
-            "mcp-call": "mcp-call",
-            "mcp-list-servers": "mcp-servers",
-            "mcp-list-tools": "mcp-tools",
+            # MCP commands (xkit mcp <subcommand>)
+            "mcp": "mcp-status",  # Default mcp action
             
-            # Plugin commands
-            "plugin-list": "plugin-list",
-            "plugin-load": "plugin-load",
-            "plugin-reload": "plugin-reload",
-            "plugin-unload": "plugin-unload",
+            # Plugin commands (xkit plugin <subcommand>)  
+            "plugin": "plugin-list",  # Default plugin action
             
-            # Event commands
-            "events-status": "events-status",
-            "events-history": "events-history", 
-            "events-clear": "events-clear",
+            # Event commands (xkit events <subcommand>)
+            "events": "events-status",  # Default events action
             
-            # Git commands
-            "git-status": "git-status",
-            "git-branch": "git-branch",
-            "git-create-branch": "git-create-branch",
+            # Git commands (xkit git <subcommand>)
+            "git": "git-status",  # Default git action
             
-            # AI commands
-            "ai-analyze": "ai-analyze",
-            "ai-explain-code": "ai-explain-code",
-            "xpilot-analyze": "xpilot-analyze",
+            # AI commands (xkit ai <subcommand>)
+            "ai": "ai-analyze",  # Default ai action
             
-            # Debug commands
+            # Debug commands (xkit debug <subcommand>)
             "debug": "debug",
-            "system-init": "system-init",
-            "diagnose": "diagnose"
+            
+            # Legacy compatibility (remove xkit- prefix if present)
+            "xkit-help": "help",
+            "xkit-status": "status", 
+            "xkit-version": "version",
+            "mcp-status": "mcp-status",
+            "mcp-servers": "mcp-servers",
+            "mcp-tools": "mcp-tools",
+            "plugin-list": "plugin-list",
+            "events-status": "events-status"
         }
         
-        command = command_mapping.get(action, action)
+        # Handle subcommands for structured commands
+        if command in ["mcp", "plugin", "events", "git", "ai", "debug"] and params:
+            subcommand = params[0].lower()
+            remaining_params = params[1:] if len(params) > 1 else []
+            
+            # Map structured commands
+            structured_commands = {
+                "mcp": {
+                    "status": "mcp-status",
+                    "servers": "mcp-servers", 
+                    "tools": "mcp-tools",
+                    "call": "mcp-call"
+                },
+                "plugin": {
+                    "list": "plugin-list",
+                    "load": "plugin-load",
+                    "unload": "plugin-unload",
+                    "reload": "plugin-reload"
+                },
+                "events": {
+                    "status": "events-status",
+                    "history": "events-history",
+                    "clear": "events-clear"
+                },
+                "git": {
+                    "status": "git-status",
+                    "branch": "git-branch",
+                    "create-branch": "git-create-branch",
+                    "commit": "git-commit",
+                    "push": "git-push"
+                },
+                "ai": {
+                    "analyze": "ai-analyze",
+                    "explain": "ai-explain-code",
+                    "suggest": "ai-suggest"
+                },
+                "debug": {
+                    "system": "debug",
+                    "mcp": "debug-mcp",
+                    "plugins": "debug-plugins",
+                    "events": "debug-events"
+                }
+            }
+            
+            if command in structured_commands and subcommand in structured_commands[command]:
+                final_command = structured_commands[command][subcommand]
+                final_params = remaining_params
+            else:
+                # Invalid subcommand - show helpful error with examples
+                self._show_subcommand_error(command, subcommand, structured_commands)
+                return
+        else:
+            # Direct command or default action
+            final_command = command_mapping.get(command, command)
+            final_params = params
         
         try:
-            result = await self.app.execute_command(command, args)
+            result = await self.app.execute_command(final_command, final_params)
             if result and hasattr(result, 'success'):
                 if result.success and result.output:
                     print(result.output)
@@ -212,10 +261,10 @@ class XKitV3Application:
                     print(f"❌ {result.error}")
             else:
                 # Handle commands that don't return result objects
-                print(result if result else f"✅ Command '{command}' executed successfully")
+                print(result if result else f"✅ Command 'xkit {command}' executed successfully")
         except Exception as e:
             # Fallback to direct command implementation
-            await self._handle_command_direct(command, args, e)
+            await self._handle_command_direct(final_command, final_params, e)
 
     async def _handle_command_direct(self, command: str, args: List[str], original_error: Exception) -> None:
         """Handle commands directly when application execution fails"""
@@ -467,6 +516,111 @@ class XKitV3Application:
             print("⚠️  Hybrid MCP Architecture: Not Available")
             print("🔄 Running in Legacy Mode")
             print("💡 Install dependencies for full functionality")
+    
+    def _show_subcommand_error(self, command: str, subcommand: str, structured_commands: dict) -> None:
+        """Show detailed error message with examples when subcommand is invalid"""
+        print(f"❌ Unknown subcommand: xkit {command} {subcommand}")
+        print()
+        
+        if command not in structured_commands:
+            print(f"💡 Command '{command}' doesn't support subcommands")
+            print(f"🔧 Try: xkit {command}")
+            return
+        
+        available_subcommands = structured_commands[command]
+        
+        # Command-specific examples and explanations
+        command_examples = {
+            "mcp": {
+                "description": "MCP (Model Context Protocol) commands for server management",
+                "examples": [
+                    ("xkit mcp status", "Check MCP server connections and health"),
+                    ("xkit mcp servers", "List all configured MCP servers with details"),
+                    ("xkit mcp tools", "Show tools available from connected servers"),
+                    ("xkit mcp call <tool>", "Execute a specific MCP tool")
+                ]
+            },
+            "plugin": {
+                "description": "Plugin system commands for managing XKit extensions",
+                "examples": [
+                    ("xkit plugin list", "Show all loaded plugins and their status"),
+                    ("xkit plugin load <name>", "Load a specific plugin by name"),
+                    ("xkit plugin reload <name>", "Hot-reload a plugin during development"),
+                    ("xkit plugin unload <name>", "Unload a plugin to free resources")
+                ]
+            },
+            "events": {
+                "description": "Event system commands for monitoring and management", 
+                "examples": [
+                    ("xkit events status", "Show event bus metrics and activity"),
+                    ("xkit events history", "Display recent event history and logs"),
+                    ("xkit events clear", "Clear event history and reset counters")
+                ]
+            },
+            "git": {
+                "description": "Enhanced Git commands with XKit integration",
+                "examples": [
+                    ("xkit git status", "Enhanced git status with MCP integration"),
+                    ("xkit git branch", "List and manage branches with XKit helpers"),
+                    ("xkit git create-branch <type> <name>", "Create branch with XKit naming conventions"),
+                    ("xkit git commit -m \"message\"", "Commit with enhanced error handling")
+                ]
+            },
+            "ai": {
+                "description": "AI-powered analysis and assistance commands",
+                "examples": [
+                    ("xkit ai analyze \"your question\"", "Get AI analysis and suggestions"),
+                    ("xkit ai explain \"code snippet\"", "Explain what code does"),
+                    ("xkit ai suggest \"improvement context\"", "Get improvement suggestions")
+                ]
+            },
+            "debug": {
+                "description": "System diagnostics and troubleshooting commands",
+                "examples": [
+                    ("xkit debug", "Run comprehensive system diagnostics"),
+                    ("xkit debug system", "Detailed system health check"),
+                    ("xkit debug mcp", "Debug MCP connections and servers"),
+                    ("xkit debug plugins", "Debug plugin loading and status")
+                ]
+            }
+        }
+        
+        info = command_examples.get(command, {})
+        desc = info.get("description", f"Commands for {command} operations")
+        examples = info.get("examples", [])
+        
+        print(f"📖 {desc}")
+        print()
+        print(f"✅ Available subcommands for '{command}':")
+        print(f"   {', '.join(available_subcommands.keys())}")
+        print()
+        print(f"💡 Usage Examples:")
+        
+        if examples:
+            for example, explanation in examples:
+                print(f"   {example}")
+                print(f"      └─ {explanation}")
+                print()
+        else:
+            # Fallback examples if not defined
+            for subcmd in available_subcommands.keys():
+                print(f"   xkit {command} {subcmd}")
+        
+        print(f"🌟 Did you mean one of these?")
+        # Show the most likely matches
+        similar_commands = [cmd for cmd in available_subcommands.keys() 
+                          if subcommand.lower() in cmd.lower() or cmd.lower().startswith(subcommand.lower())]
+        
+        if similar_commands:
+            for similar in similar_commands[:3]:  # Show top 3 matches
+                print(f"   💡 xkit {command} {similar}")
+        else:
+            # Show first few available commands as suggestions
+            for cmd in list(available_subcommands.keys())[:3]:
+                print(f"   💡 xkit {command} {cmd}")
+        
+        print()
+        print(f"🔧 For detailed help: xkit help {command}")
     
     def run(self, args: List[str]) -> None:
         """Synchronous entry point"""

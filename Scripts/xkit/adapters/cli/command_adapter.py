@@ -225,28 +225,236 @@ class CommandAdapter(ICommandService):
     
     # Default command handlers
     async def _handle_help(self, args: List[str], context: Dict[str, Any]) -> str:
-        """Handle help command"""
+        """Handle help command with detailed examples and usage"""
         if args and len(args) > 0:
-            # Help for specific command
+            # Help for specific command with detailed usage
             command = args[0]
-            help_text = self.get_command_help(command)
-            if help_text:
-                return f"📖 {command}: {help_text}"
-            else:
-                return f"❓ No help available for command: {command}"
+            return self._get_detailed_command_help(command)
         else:
-            # General help
-            commands = self.list_available_commands()
-            categories = self._group_commands_by_category()
-            
-            help_lines = ["🚀 XKit Commands:"]
-            for category, cmds in categories.items():
-                help_lines.append(f"\n📂 {category.title()}:")
-                for cmd in cmds:
-                    desc = self.get_command_help(cmd)
-                    help_lines.append(f"  • {cmd} - {desc}")
-            
-            return "\n".join(help_lines)
+            # Enhanced general help with examples
+            return self._get_comprehensive_help()
+    
+    def _get_comprehensive_help(self) -> str:
+        """Get comprehensive help with examples and usage patterns"""
+        help_lines = [
+            "🚀 XKit v3.0 - Hybrid MCP Architecture",
+            "═" * 50,
+            "",
+            "💡 Standardized Command Structure:",
+            "  xkit <command> <params>     # New standardized format",
+            "  <command> <params>          # Legacy format (still works)",
+            "",
+            "🌟 Quick Start Examples:",
+            "  xkit help                   # Show this help",
+            "  xkit status                 # Check system status", 
+            "  xkit version                # Show version info",
+            "  xkit mcp status             # Check MCP servers",
+            "  xkit plugin list            # List loaded plugins",
+            "",
+            "🔗 MCP (Model Context Protocol) Commands:",
+            "  xkit mcp status             Show MCP servers and connection status",
+            "  xkit mcp servers            List all configured MCP servers with details", 
+            "  xkit mcp tools              List tools available from MCP servers",
+            "  xkit mcp call <tool>        Execute an MCP tool",
+            "",
+            "🧩 Plugin System Commands:",
+            "  xkit plugin list            Show loaded plugins and their status",
+            "  xkit plugin load <name>     Load a specific plugin",
+            "  xkit plugin reload <name>   Reload a plugin with hot-reload",
+            "  xkit plugin unload <name>   Unload a plugin",
+            "",
+            "📡 Event System Commands:",
+            "  xkit events status          Show event bus metrics and activity",
+            "  xkit events history         Show recent event history",
+            "  xkit events clear           Clear event history",
+            "",
+            "� Git Integration Commands:",
+            "  xkit git status             Enhanced git status with MCP integration",
+            "  xkit git branch             List and manage branches",
+            "  xkit git create-branch      Create new branch with XKit conventions",
+            "",
+            "🤖 AI Assistant Commands:",
+            "  xkit ai analyze <text>      AI-powered analysis and suggestions",
+            "  xkit ai explain <code>      Explain code functionality",
+            "  xkit ai suggest <context>   Get improvement suggestions",
+            "",
+            "💎 Core System Commands:",
+            "  xkit help [command]         Show help (detailed help for specific command)",
+            "  xkit status                 Show complete system status and health",
+            "  xkit version                Show XKit version and architecture info",
+            "  xkit config [key] [value]   Manage XKit configuration",
+            "  xkit init                   Initialize XKit system",
+            "",
+            "🔧 Debug and Diagnostics:",
+            "  xkit debug                  Run system diagnostics and health checks",
+            "  xkit debug system           Detailed system diagnostics",
+            "  xkit debug mcp              Debug MCP connections",
+            "  xkit debug plugins          Debug plugin system",
+            "",
+            "🎯 Usage Pattern Examples:",
+            "  # Check everything is working",
+            "  xkit status",
+            "",
+            "  # Work with MCP servers",
+            "  xkit mcp status",
+            "  xkit mcp servers",
+            "",
+            "  # Manage plugins", 
+            "  xkit plugin list",
+            "  xkit plugin load my-plugin",
+            "",
+            "  # Use AI features",
+            "  xkit ai analyze \"explain this error\"",
+            "",
+            "  # Git operations with XKit enhancements",
+            "  xkit git status",
+            "  xkit git create-branch feature my-new-feature",
+            "",
+            "📚 Command Structure Benefits:",
+            "  • Consistent: All commands follow xkit <command> <params> pattern",
+            "  • Hierarchical: Related commands grouped (mcp, plugin, events, etc.)",
+            "  • Discoverable: Easy to explore with tab completion",
+            "  • Backward Compatible: Old command names still work",
+            "",
+            "🌟 Pro Tips:",
+            "  • Use TAB completion: type 'xkit m[TAB]' to see mcp commands",
+            "  • Commands are case-insensitive: XKIT STATUS works too",
+            "  • Get detailed help: xkit help mcp (shows all mcp subcommands)",
+            "  • Use 'xkit debug' if any command isn't working as expected",
+            "",
+            "💡 Architecture:",
+            "  • PowerShell provides the xkit command interface",
+            "  • Python backend handles all complex logic and processing",
+            "  • MCP protocol enables extensible tool integration",
+            "  • Plugin system supports hot-reload for development",
+            ""
+        ]
+        
+        return "\n".join(help_lines)
+    
+    def _get_detailed_command_help(self, command: str) -> str:
+        """Get detailed help for a specific command"""
+        detailed_help = {
+            "help": {
+                "description": "Show help information with examples and usage patterns",
+                "usage": [
+                    "help                    # Show general help with all commands",
+                    "help <command>          # Show detailed help for specific command"
+                ],
+                "examples": [
+                    "help                    # Show this comprehensive help",
+                    "help mcp-status         # Get detailed help for mcp-status command",
+                    "help plugin-list        # Learn how to use plugin-list command"
+                ]
+            },
+            "status": {
+                "description": "Show complete XKit system status and health information",
+                "usage": ["status                     # Show system status"],
+                "examples": [
+                    "status                  # Check if XKit is running properly",
+                    "# Shows: Architecture status, services health, component status"
+                ]
+            },
+            "version": {
+                "description": "Display XKit version and architecture information",
+                "usage": ["version                    # Show version info"],
+                "examples": [
+                    "version                 # See current XKit version and architecture",
+                    "# Shows: v3.0.0, Hybrid MCP Architecture, components status"
+                ]
+            },
+            "mcp-status": {
+                "description": "Check Model Context Protocol servers status and connections",
+                "usage": ["mcp-status                 # Show MCP system status"],
+                "examples": [
+                    "mcp-status              # Check if MCP servers are running",
+                    "# Shows: Connection status, server count, health info"
+                ]
+            },
+            "mcp-servers": {
+                "description": "List all configured MCP servers with detailed information",
+                "usage": ["mcp-servers                # List MCP servers"],
+                "examples": [
+                    "mcp-servers             # See all available MCP servers",
+                    "# Shows: Server names, types, status, descriptions, commands"
+                ]
+            },
+            "mcp-tools": {
+                "description": "Display tools available from connected MCP servers",
+                "usage": ["mcp-tools                  # List available MCP tools"],
+                "examples": [
+                    "mcp-tools               # See what tools you can use",
+                    "# Shows: Tool names, descriptions, server sources"
+                ]
+            },
+            "plugin-list": {
+                "description": "Show loaded plugins and their current status",
+                "usage": ["plugin-list                # List loaded plugins"],
+                "examples": [
+                    "plugin-list             # See what plugins are loaded",
+                    "# Shows: Plugin names, versions, status, capabilities"
+                ]
+            },
+            "events-status": {
+                "description": "Display event system metrics and activity information",
+                "usage": ["events-status              # Show event bus status"],
+                "examples": [
+                    "events-status           # Check event system health",
+                    "# Shows: Event counts, processing times, error rates"
+                ]
+            },
+            "debug": {
+                "description": "Run comprehensive system diagnostics and health checks",
+                "usage": ["debug                      # Run system diagnostics"],
+                "examples": [
+                    "debug                   # Diagnose any system issues",
+                    "# Shows: Component health, error details, troubleshooting tips"
+                ]
+            },
+            "list-commands": {
+                "description": "List all available commands organized by category",
+                "usage": ["list-commands              # List all commands"],
+                "examples": [
+                    "list-commands           # See all available commands",
+                    "# Shows: Commands grouped by category (Core, MCP, Plugins, etc.)"
+                ]
+            }
+        }
+        
+        if command not in detailed_help:
+            return f"❓ No detailed help available for command: {command}\n💡 Use 'list-commands' to see available commands"
+        
+        info = detailed_help[command]
+        help_lines = [
+            f"📖 {command.upper()} - Detailed Help",
+            "═" * (len(command) + 20),
+            "",
+            f"📝 Description:",
+            f"  {info['description']}",
+            "",
+            f"🔧 Usage:",
+        ]
+        
+        for usage in info['usage']:
+            help_lines.append(f"  {usage}")
+        
+        help_lines.extend([
+            "",
+            f"💡 Examples:",
+        ])
+        
+        for example in info['examples']:
+            help_lines.append(f"  {example}")
+        
+        help_lines.extend([
+            "",
+            f"🌟 Tips:",
+            f"  • This command works in PowerShell through Python backend",
+            f"  • Use 'help' without arguments to see all commands",
+            f"  • Use 'debug' if this command isn't working properly"
+        ])
+        
+        return "\n".join(help_lines)
     
     async def _handle_status(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle status command"""
