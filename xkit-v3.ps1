@@ -17,8 +17,8 @@ function Invoke-XKit {
     
     # Verify Python main exists
     if (-not (Test-Path $PythonMain)) {
-        Write-Host "❌ XKit Python main not found at: $PythonMain" -ForegroundColor Red
-        Write-Host "💡 Run 'Install-XKit' to set up the hybrid architecture" -ForegroundColor Yellow
+        Write-Host "Error: XKit Python main not found at: $PythonMain" -ForegroundColor Red
+        Write-Host "Info: Run 'Install-XKit' to set up the hybrid architecture" -ForegroundColor Yellow
         return $false
     }
     
@@ -40,15 +40,14 @@ function Invoke-XKit {
         & $cmd[0] $cmd[1..($cmd.Length-1)]
         
         if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-            Write-Host "❌ XKit Python failed with exit code: $LASTEXITCODE" -ForegroundColor Red
-            Write-Host "🔧 Use 'xkit debug $Action' for detailed error analysis" -ForegroundColor Cyan
+            Write-Host "Error: XKit Python failed with exit code: $LASTEXITCODE" -ForegroundColor Red
+            Write-Host "Debug: Use 'xkit debug system' for detailed diagnostics" -ForegroundColor Cyan
             return $false
         }
-        # Don't return anything for successful execution to avoid "True" output
     }
     catch {
-        Write-Host "❌ XKit execution failed: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "🔧 Use 'xkit debug system' for system diagnostics" -ForegroundColor Cyan
+        Write-Host "Error: XKit execution failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Debug: Use 'xkit debug system' for system diagnostics" -ForegroundColor Cyan
         return $false
     }
 }
@@ -61,9 +60,9 @@ function global:xkit-help { Invoke-XKit "help" @args }
 function global:xkit-version { Invoke-XKit "version" @args }
 function global:xkit-status { Invoke-XKit "status" @args }
 function global:xkit-reload { 
-    Write-Host "🔄 Reloading XKit v3.0 profile..." -ForegroundColor Yellow
+    Write-Host "Reloading XKit v3.0 profile..." -ForegroundColor Yellow
     . $PROFILE
-    Write-Host "✅ XKit Hybrid MCP Architecture reloaded!" -ForegroundColor Green
+    Write-Host "XKit Hybrid MCP Architecture reloaded!" -ForegroundColor Green
 }
 
 # MCP commands - new in v3.0
@@ -130,19 +129,19 @@ function global:prompt {
     try {
         $gitBranch = git rev-parse --abbrev-ref HEAD 2>$null
         if ($gitBranch) { 
-            $branch = " 🌿$gitBranch"
+            $branch = " [$gitBranch]"
         }
     } catch {}
     
     # XKit v3.0 prompt with MCP indicator
-    "🚀 $location$branch 🔗MCP > "
+    "PS $location$branch [MCP] > "
 }
 
 # Display startup message
-Write-Host "🚀 XKit v3.0 Hybrid MCP Architecture loaded!" -ForegroundColor Green
-Write-Host "🔗 Model Context Protocol integration active" -ForegroundColor Cyan
-Write-Host "🧩 Plugin system ready | 📡 Event bus active" -ForegroundColor Yellow
-Write-Host "💡 Type 'xkit-help' for available commands" -ForegroundColor Blue
+Write-Host "XKit v3.0 Hybrid MCP Architecture loaded!" -ForegroundColor Green
+Write-Host "Model Context Protocol integration active" -ForegroundColor Cyan
+Write-Host "Plugin system ready | Event bus active" -ForegroundColor Yellow
+Write-Host "Type 'xkit-help' for available commands" -ForegroundColor Blue
 
 # Initialize XKit v3.0 system on first load
 if (-not $global:XKitV3Loaded) {

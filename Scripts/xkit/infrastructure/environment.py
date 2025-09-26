@@ -193,3 +193,27 @@ class EnvironmentDetector:
             pass
         
         return 'unknown'
+
+
+# Service class for v3.0 compatibility
+class EnvironmentService:
+    """Environment service for v3.0 architecture"""
+    
+    def __init__(self):
+        self.detector = EnvironmentDetector()
+    
+    def get_environment_info(self) -> EnvironmentInfo:
+        """Get current environment information"""
+        return self.detector.detect_environment()
+    
+    def is_container(self) -> bool:
+        """Check if running in container"""
+        return self.detector._is_container()
+    
+    def is_wsl(self) -> bool:
+        """Check if running in WSL"""
+        return self.detector._is_wsl()
+    
+    def is_elevated(self) -> bool:
+        """Check if has elevated privileges"""
+        return self.detector._is_elevated()
