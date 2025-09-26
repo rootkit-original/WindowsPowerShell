@@ -1,413 +1,519 @@
-# XKit v2.1 - Arquitetura Técnica
+# XKit v3.0 - Arquitetura Híbrida MCP
 
-## 🏗️ Clean Architecture Overview
+## 🏗️ Hybrid MCP Architecture Overview
 
-O XKit segue os princípios de Clean Architecture, mantendo separação clara de responsabilidades e facilitando manutenção e testes.
+O XKit v3.0 implementa uma arquitetura híbrida baseada no Model Context Protocol (MCP), combinando:
 
-## 📐 Estrutura das Camadas
+- **🔌 MCP Integration** - Servidores MCP internos e externos
+- **🧩 Plugin System** - Sistema modular com hot-reload
+- **📡 Event-Driven** - Bus de eventos para comunicação assíncrona
+- **🏗️ Hexagonal Architecture** - Ports and Adapters pattern
+- **🤖 AI-First** - Gemini 2.0 Flash como core inteligente
+- **⚡ Python-Centric** - PowerShell como wrapper mínimo
 
-```
+## 📐 Estrutura Hexagonal
+
+```text
 Scripts/xkit/
-├── domain/                 # Regras de negócio
-│   ├── entities.py        # Entidades principais  
-│   └── interfaces.py      # Contratos/Abstrações
-├── application/           # Casos de uso
-│   └── use_cases.py      # Lógica de aplicação
-└── infrastructure/       # Implementações
-    ├── compact_display.py    # Interface compacta
-    ├── ai_service.py        # Integração Gemini AI
-    ├── telegram_service.py  # Notificações Telegram
-    ├── environment.py       # Detecção ambiente
-    ├── container.py         # Gerenciamento containers
-    ├── git.py              # Operações Git
-    └── file_system.py      # Sistema de arquivos
+├── core/                           # 💎 Core Domain
+│   ├── application/               # Application Services
+│   │   ├── __init__.py
+│   │   ├── command_service.py     # Command orchestration
+│   │   ├── ai_service.py          # AI analysis service
+│   │   └── plugin_service.py      # Plugin management
+│   ├── domain/                    # Business Logic
+│   │   ├── __init__.py
+│   │   ├── entities.py            # Domain entities
+│   │   ├── interfaces.py          # Domain contracts
+│   │   └── value_objects.py       # Value objects
+│   └── ports/                     # Interface Contracts
+│       ├── __init__.py
+│       ├── ai_port.py             # AI service interface
+│       ├── git_port.py            # Git operations interface
+│       └── display_port.py        # Display interface
+├── adapters/                       # 🔌 External Adapters
+│   ├── cli/                       # CLI Adapter
+│   │   ├── __init__.py
+│   │   ├── command_parser.py      # Command parsing
+│   │   └── output_formatter.py    # Output formatting
+│   └── external/                  # External Services
+│       ├── __init__.py
+│       ├── gemini_adapter.py      # Gemini AI adapter
+│       ├── git_adapter.py         # Git operations
+│       └── telegram_adapter.py    # Telegram notifications
+├── mcp/                           # 🔌 MCP Integration Layer
+│   ├── __init__.py
+│   ├── client.py                  # MCP client protocol
+│   ├── protocol.py                # MCP protocol implementation
+│   ├── config.json                # MCP servers configuration
+│   └── servers/                   # Internal MCP Servers
+│       ├── __init__.py
+│       ├── git_server.py          # Git operations server
+│       ├── ai_server.py           # AI analysis server
+│       └── project_server.py      # Project analysis server
+├── plugins/                       # 🧩 Plugin System
+│   ├── __init__.py
+│   ├── base.py                    # Plugin interface
+│   ├── manager.py                 # Plugin manager
+│   ├── loader.py                  # Dynamic loading
+│   └── registry.py                # Plugin registry
+├── events/                        # 📡 Event System
+│   ├── __init__.py
+│   ├── bus.py                     # Central event bus
+│   ├── events.py                  # Event definitions
+│   └── handlers/                  # Event handlers
+│       ├── __init__.py
+│       ├── command_handler.py     # Command events
+│       ├── error_handler.py       # Error events
+│       └── plugin_handler.py      # Plugin events
+└── infrastructure/                # 🛠️ Legacy Infrastructure
+    ├── __init__.py                # (Kept for compatibility)
+    ├── ai_service.py              # → Moving to adapters/
+    ├── git.py                     # → Moving to adapters/
+    └── display.py                 # → Moving to adapters/
 ```
 
-## 🎯 Domain Layer
+## 🎯 Core Domain Layer
 
-### Entities (Entidades de Negócio)
+### Domain Entities
 
 ```python
+# core/domain/entities.py
 @dataclass
-class DevelopmentContext:
-    """Contexto completo de desenvolvimento"""
+class XKitContext:
+    """Contexto completo do XKit v3.0"""
     project: ProjectInfo
+    mcp_status: MCPStatus
+    plugins: List[PluginInfo]
+    ai_session: Optional[AISession] = None
     git: Optional[GitInfo] = None
-    readme: Optional[ReadmeInfo] = None
-    container: Optional[ContainerInfo] = None
-    environment: Optional[EnvironmentInfo] = None
 
+@dataclass
+class MCPStatus:
+    """Status do sistema MCP"""
+    servers: List[MCPServer]
+    active_connections: int
+    tools_available: List[MCPTool]
+    
 @dataclass  
-class ProjectInfo:
-    """Informações do projeto"""
+class PluginInfo:
+    """Informações de plugin"""
     name: str
-    path: Path
-    type: str
-    technologies: List[str]
-    
+    version: str
+    loaded: bool
+    hot_reload: bool
+    commands: List[str]
+
 @dataclass
-class ContainerInfo:
-    """Informações de containers"""
-    engine_type: str  # 'podman', 'docker'
-    engine_path: Path
-    is_available: bool
-    has_compose: bool = False
+class AISession:
+    """Sessão ativa de IA"""
+    model: str
+    context: List[str]
+    active: bool
+    tokens_used: int
 ```
 
-### Interfaces (Contratos)
+### Domain Interfaces
 
 ```python
-class IProjectRepository(ABC):
-    """Contrato para operações de projeto"""
+# core/ports/ai_port.py
+class AIPort(ABC):
     @abstractmethod
-    def get_project_info(self, path: Path) -> ProjectInfo:
+    async def analyze(self, context: str) -> AIResponse:
+        pass
+    
+    @abstractmethod
+    async def explain_code(self, code: str) -> str:
+        pass
+    
+    @abstractmethod
+    async def suggest_improvements(self, project_type: str) -> List[str]:
         pass
 
-class IAIService(ABC):
-    """Contrato para serviços de AI"""  
+# core/ports/git_port.py
+class GitPort(ABC):
     @abstractmethod
-    def analyze_context(self, context: str) -> str:
+    def get_status(self) -> GitStatus:
         pass
-        
-class INotificationService(ABC):
-    """Contrato para notificações"""
+    
     @abstractmethod
-    def send_alert(self, message: str) -> bool:
+    def create_branch(self, name: str) -> bool:
+        pass
+    
+    @abstractmethod
+    def get_current_branch(self) -> str:
         pass
 ```
 
-## ⚙️ Application Layer
+## 🔌 MCP Integration Layer
 
-### Use Cases (Casos de Uso)
+### MCP Client Protocol
 
 ```python
-class AnalyzeProjectUseCase:
-    """Analisa o contexto do projeto atual"""
+# mcp/client.py
+class MCPClient:
+    def __init__(self, config_path: str):
+        self.config = self._load_config(config_path)
+        self.servers = {}
+        self.active_connections = []
     
-    def __init__(self, file_repo, git_repo, container_repo, analyzer):
-        self.file_repo = file_repo
-        self.git_repo = git_repo  
-        self.container_repo = container_repo
-        self.analyzer = analyzer
+    async def connect_server(self, server_name: str) -> bool:
+        """Conecta a um servidor MCP"""
+        server_config = self.config.get(server_name)
+        if not server_config:
+            return False
         
-    def execute(self, project_path: Path) -> DevelopmentContext:
-        # Lógica de análise...
-        return context
-
-class ShowAISuggestionsUseCase:
-    """Mostra sugestões da AI baseadas no contexto"""
+        connection = await self._establish_connection(server_config)
+        self.servers[server_name] = connection
+        return True
     
-    def execute(self, context: DevelopmentContext) -> None:
-        suggestions = self.ai_service.analyze_context(context)
-        self.display.show_ai_suggestions(suggestions)
+    async def list_tools(self, server_name: str) -> List[MCPTool]:
+        """Lista ferramentas disponíveis de um servidor"""
+        server = self.servers.get(server_name)
+        if not server:
+            return []
+        
+        return await server.list_tools()
+    
+    async def call_tool(self, server_name: str, tool_name: str, 
+                       arguments: dict) -> MCPResponse:
+        """Executa uma ferramenta em um servidor MCP"""
+        server = self.servers.get(server_name)
+        if not server:
+            raise MCPServerNotFound(server_name)
+        
+        return await server.call_tool(tool_name, arguments)
 ```
 
-### Principais Use Cases
+### Internal MCP Servers
 
-- **AnalyzeProjectUseCase** - Análise completa do projeto
-- **ShowWelcomeUseCase** - Interface de boas-vindas
-- **ShowStatusUseCase** - Status detalhado do sistema
-- **ShowAISuggestionsUseCase** - Sugestões inteligentes
-- **AskAISolutionUseCase** - Resolução de problemas
-- **ExecuteContainerCommandUseCase** - Comandos de container
-
-## 🔧 Infrastructure Layer
-
-### Services (Implementações)
-
-#### CompactDisplayService
 ```python
-class CompactDisplayService:
-    """Interface compacta estilo oh-my-zsh"""
-    
-    def show_compact_header(self, context: DevelopmentContext):
-        """Mostra header compacto com informações essenciais"""
-        # 🪟 📁projeto 🌿branch ✓ 🐳container 🐍💙
-        
-    def show_ai_suggestions(self, suggestions: List[str]):
-        """Exibe sugestões da AI de forma compacta"""
-```
-
-#### GeminiAIService  
-```python
-class GeminiAIService:
-    """Integração com Gemini AI da Google"""
-    
+# mcp/servers/git_server.py
+class GitMCPServer(MCPServer):
     def __init__(self):
-        self.api_key = os.getenv('GEMINI_API_KEY')
-        self.base_url = 'https://generativelanguage.googleapis.com'
+        super().__init__("xkit-git", "1.0.0")
+        self.git_adapter = GitAdapter()
+    
+    async def list_tools(self) -> List[MCPTool]:
+        return [
+            MCPTool(
+                name="git-status",
+                description="Get git repository status",
+                input_schema={}
+            ),
+            MCPTool(
+                name="git-create-branch", 
+                description="Create new git branch",
+                input_schema={"branch_name": {"type": "string"}}
+            )
+        ]
+    
+    async def call_tool(self, name: str, arguments: dict) -> str:
+        if name == "git-status":
+            status = self.git_adapter.get_status()
+            return self._format_git_status(status)
         
-    def analyze_context(self, context: str) -> str:
-        """Análise inteligente do contexto"""
+        elif name == "git-create-branch":
+            branch_name = arguments.get("branch_name")
+            success = self.git_adapter.create_branch(branch_name)
+            return f"✅ Branch {branch_name} created" if success else "❌ Failed"
         
-    def solve_problem(self, problem: str, context: str) -> str:
-        """Resolução de problemas específicos"""
+        raise MCPToolNotFound(name)
 ```
 
-#### TelegramService
+## 🧩 Plugin System
+
+### Plugin Architecture
+
 ```python
-class TelegramService:
-    """Notificações via Telegram Bot"""
+# plugins/base.py
+class XKitPlugin(ABC):
+    def __init__(self, name: str, version: str):
+        self.name = name
+        self.version = version
+        self.loaded = False
+        self.commands = {}
+        self.event_handlers = {}
     
+    @abstractmethod
+    def load(self) -> None:
+        """Carrega o plugin"""
+        pass
+    
+    @abstractmethod
+    def unload(self) -> None:
+        """Descarrega o plugin"""
+        pass
+    
+    def register_command(self, command: str, handler: Callable):
+        """Registra um comando do plugin"""
+        self.commands[command] = handler
+    
+    def register_event_handler(self, event_type: str, handler: Callable):
+        """Registra um manipulador de eventos"""
+        self.event_handlers[event_type] = handler
+
+# plugins/manager.py
+class PluginManager:
+    def __init__(self, plugin_dir: Path):
+        self.plugin_dir = plugin_dir
+        self.loaded_plugins = {}
+        self.registry = PluginRegistry()
+    
+    def load_plugin(self, plugin_name: str) -> bool:
+        """Carrega um plugin dinamicamente"""
+        try:
+            plugin_module = self._import_plugin(plugin_name)
+            plugin_class = self._get_plugin_class(plugin_module)
+            
+            plugin_instance = plugin_class()
+            plugin_instance.load()
+            
+            self.loaded_plugins[plugin_name] = plugin_instance
+            self.registry.register(plugin_instance)
+            
+            # Publish plugin loaded event
+            event_bus.publish(PluginLoadedEvent(plugin_name))
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to load plugin {plugin_name}: {e}")
+            return False
+    
+    def hot_reload_plugin(self, plugin_name: str) -> bool:
+        """Hot reload de um plugin"""
+        if plugin_name in self.loaded_plugins:
+            self.unload_plugin(plugin_name)
+        
+        return self.load_plugin(plugin_name)
+```
+
+## 📡 Event-Driven Architecture
+
+### Event Bus System
+
+```python
+# events/bus.py
+class EventBus:
     def __init__(self):
-        self.token = os.getenv('TELEGRAM_TOKEN') 
-        self.admin_id = os.getenv('ADMIN_ID')
-        
-    def send_alert(self, message: str) -> bool:
-        """Envia alertas para o administrador"""
-        
-    def send_anomaly_report(self, anomalies: List[str]) -> bool:
-        """Relatório de anomalias detectadas"""
-```
-
-#### EnvironmentDetector
-```python
-class EnvironmentDetector:
-    """Detecção avançada do ambiente"""
+        self._subscribers = defaultdict(list)
+        self._middleware = []
     
-    def detect_environment(self) -> EnvironmentInfo:
-        """Detecta Windows/WSL/Container/Cloud"""
-        
-    def detect_development_tools(self) -> Dict[str, bool]:
-        """Detecta ferramentas de desenvolvimento"""
-        # Python, Node.js, .NET, Java, etc.
-```
-
-## 🚀 Application Entry Point
-
-### XKitCompactApplication
-
-```python
-class XKitCompactApplication:
-    """Ponto de entrada principal da aplicação"""
+    def subscribe(self, event_type: Type[Event], 
+                 handler: Callable[[Event], Awaitable[None]]):
+        """Subscribe to an event type"""
+        self._subscribers[event_type].append(handler)
     
-    def __init__(self):
-        # Dependency Injection
-        self._setup_dependencies()
+    async def publish(self, event: Event):
+        """Publish an event to all subscribers"""
+        # Apply middleware
+        for middleware in self._middleware:
+            event = await middleware(event)
         
-    def _setup_dependencies(self):
-        """Configuração de injeção de dependência"""
-        # Infrastructure
-        self.file_system = FileSystemRepository()
-        self.git_repo = GitRepository() 
-        self.container_repo = ContainerRepository()
-        
-        # Services  
-        self.display_service = CompactDisplayService()
-        self.ai_service = GeminiAIService()
-        self.telegram_service = TelegramService()
-        
-        # Use Cases
-        self.analyze_project = AnalyzeProjectUseCase(...)
-        self.show_welcome = ShowWelcomeUseCase(...)
-        
-    def run(self, args: List[str]) -> None:
-        """Executa comando baseado nos argumentos"""
-        command = args[0] if args else 'welcome'
-        self._route_command(command, args[1:])
-```
-
-## 🔄 Data Flow
-
-### Fluxo de Análise de Projeto
-
-1. **Entry Point** - `xkit_compact.py` recebe comando
-2. **Application** - XKitCompactApplication roteia para use case  
-3. **Use Case** - AnalyzeProjectUseCase coordena análise
-4. **Repositories** - Coletam dados (filesystem, git, containers)
-5. **Domain** - Cria DevelopmentContext com regras de negócio
-6. **Services** - AI analisa contexto, Telegram envia alertas
-7. **Display** - CompactDisplayService apresenta resultado
-
-### Fluxo de Comando AI
-
-1. **Usuário** executa `xkit-ai "pergunta"`
-2. **Application** chama AskAISolutionUseCase  
-3. **Use Case** coleta contexto atual
-4. **AI Service** processa pergunta + contexto
-5. **Display Service** formata e exibe resposta
-6. **Telegram Service** envia log da interação (opcional)
-
-## 🧪 Dependency Injection
-
-### Padrão de Injeção
-
-```python
-# Construção das dependências
-def _setup_dependencies(self):
-    # Infrastructure layer (implementações concretas)
-    file_repo = FileSystemRepository()
-    git_repo = GitRepository()
-    container_repo = ContainerRepository()
-    
-    # Services layer  
-    display = CompactDisplayService()
-    ai = GeminiAIService()
-    telegram = TelegramService()
-    
-    # Application layer (casos de uso)
-    self.analyze_project = AnalyzeProjectUseCase(
-        file_repo, git_repo, container_repo, analyzer
-    )
-    self.show_ai = ShowAISuggestionsUseCase(display, ai)
-```
-
-### Benefícios
-
-- **Testabilidade** - Mocks fáceis para testes
-- **Flexibilidade** - Troca de implementações sem alterar regras
-- **Manutenibilidade** - Mudanças isoladas por camada
-- **Single Responsibility** - Cada classe tem uma responsabilidade
-
-## 🔧 Configuration Management
-
-### Environment Variables
-
-```python
-# Configurações padrão no perfil PowerShell
-$env:GEMINI_API_KEY = 'chave_da_api'
-$env:TELEGRAM_TOKEN = 'token_do_bot'  
-$env:ADMIN_ID = 'seu_telegram_id'
-
-# Configurações opcionais
-$env:XKIT_DEBUG = 'true'
-$env:XKIT_CACHE_TTL = '300'
-$env:CONTAINER_ENGINE = 'podman'
-```
-
-### Configuration Classes
-
-```python
-@dataclass
-class XKitConfig:
-    """Configurações centralizadas"""
-    gemini_api_key: str
-    telegram_token: str
-    admin_id: str
-    debug_mode: bool = False
-    cache_ttl: int = 300
-    
-    @classmethod
-    def from_environment(cls) -> 'XKitConfig':
-        return cls(
-            gemini_api_key=os.getenv('GEMINI_API_KEY', ''),
-            telegram_token=os.getenv('TELEGRAM_TOKEN', ''),
-            admin_id=os.getenv('ADMIN_ID', ''),
-            debug_mode=os.getenv('XKIT_DEBUG', '').lower() == 'true',
-            cache_ttl=int(os.getenv('XKIT_CACHE_TTL', '300'))
+        # Notify subscribers
+        handlers = self._subscribers[type(event)]
+        await asyncio.gather(
+            *[handler(event) for handler in handlers],
+            return_exceptions=True
         )
+    
+    def add_middleware(self, middleware: Callable[[Event], Awaitable[Event]]):
+        """Add event middleware"""
+        self._middleware.append(middleware)
+
+# events/events.py
+@dataclass
+class CommandExecutedEvent(Event):
+    command: str
+    arguments: Dict[str, Any]
+    result: Any
+    execution_time: float
+    timestamp: datetime
+
+@dataclass
+class PluginLoadedEvent(Event):
+    plugin_name: str
+    plugin_version: str
+    commands_registered: List[str]
+    timestamp: datetime
+
+@dataclass
+class AIAnalysisEvent(Event):
+    query: str
+    response: str
+    model_used: str
+    tokens_consumed: int
+    timestamp: datetime
 ```
 
-## 🎯 Design Patterns
-
-### Repository Pattern
-- Abstrai acesso a dados (filesystem, git, containers)
-- Permite testes com mocks
-- Facilita mudanças de implementação
-
-### Strategy Pattern  
-- ContainerService suporta Podman/Docker
-- DisplayService pode ter temas diferentes
-- AIService pode usar diferentes provedores
-
-### Observer Pattern
-- TelegramService observa anomalias
-- DisplayService observa mudanças de contexto
-- Logs automáticos de eventos importantes
-
-### Command Pattern
-- Cada comando do CLI é um Command object
-- Facilita undo/redo (futuro)
-- Permite queuing de comandos
-
-## 📊 Error Handling
-
-### Estratégia de Erros
+### Event Handlers
 
 ```python
-class XKitException(Exception):
-    """Exceção base do XKit"""
-    pass
-
-class ContainerNotAvailableException(XKitException):
-    """Container engine não disponível"""
-    pass
-
-class AIServiceException(XKitException):
-    """Erro no serviço de AI"""
-    pass
-
-# Tratamento centralizado
-try:
-    result = use_case.execute()
-except XKitException as e:
-    display_service.show_error(e)
-    telegram_service.send_error_alert(e)
-```
-
-### Logging
-
-```python
-import logging
-
-logger = logging.getLogger('xkit')
-logger.setLevel(logging.INFO)
-
-# Logs estruturados
-logger.info("Project analyzed", extra={
-    'project_name': project.name,
-    'technologies': project.technologies,
-    'has_containers': bool(container_info)
-})
-```
-
-## 🧪 Testing Strategy
-
-### Unit Tests
-```python
-class TestAnalyzeProjectUseCase:
-    def test_analyze_python_project(self):
-        # Mock repositories
-        file_repo = Mock()
-        git_repo = Mock()  
-        container_repo = Mock()
+# events/handlers/command_handler.py
+class CommandEventHandler:
+    def __init__(self, logger: LoggerPort):
+        self.logger = logger
+    
+    @event_bus.subscribe(CommandExecutedEvent)
+    async def handle_command_executed(self, event: CommandExecutedEvent):
+        """Log command execution"""
+        self.logger.info(
+            f"Command executed: {event.command} "
+            f"({event.execution_time:.2f}ms)"
+        )
         
-        # Setup mocks
-        file_repo.get_project_info.return_value = ProjectInfo(...)
+        # Performance monitoring
+        if event.execution_time > 1000:  # > 1s
+            self.logger.warning(
+                f"Slow command detected: {event.command}"
+            )
+
+# events/handlers/plugin_handler.py  
+class PluginEventHandler:
+    def __init__(self, display: DisplayPort):
+        self.display = display
+    
+    @event_bus.subscribe(PluginLoadedEvent)
+    async def handle_plugin_loaded(self, event: PluginLoadedEvent):
+        """Display plugin loaded notification"""
+        self.display.success(
+            f"🧩 Plugin {event.plugin_name} v{event.plugin_version} loaded"
+        )
         
-        # Test use case
-        use_case = AnalyzeProjectUseCase(file_repo, git_repo, container_repo)
-        result = use_case.execute(Path('/test'))
-        
-        # Assertions
-        assert result.project.name == 'test'
+        if event.commands_registered:
+            commands = ", ".join(event.commands_registered)
+            self.display.info(f"Commands registered: {commands}")
 ```
 
-### Integration Tests
-- Testes com APIs reais (opcional)
-- Validação de comandos PowerShell
-- Testes de interface compacta
+## ⚡ Performance & Optimization
 
-## 🚀 Performance Considerations
+### Startup Optimization
 
-### Otimizações
+- **Lazy Loading**: Plugins carregados sob demanda
+- **MCP Connection Pooling**: Reutilização de conexões
+- **Event Bus Async**: Processamento assíncrono de eventos
+- **Cache Strategy**: Cache inteligente para operações Git e AI
 
-- **Lazy Loading** - Serviços carregam apenas quando necessário
-- **Caching** - Resultados de análise são cachéados
-- **Async Operations** - Chamadas de API não bloqueantes (futuro)
-- **Minimal Dependencies** - Apenas imports necessários
+### Memory Management
 
-### Métricas
+- **Plugin Lifecycle**: Garbage collection automático de plugins
+- **Event Buffer**: Buffer limitado para eventos
+- **MCP Cleanup**: Limpeza automática de conexões inativas
+
+### Hot-Reload Performance
 
 ```python
-@dataclass 
-class PerformanceMetrics:
-    startup_time: float
-    analysis_time: float
-    ai_response_time: float
-    memory_usage: int
+# Optimized hot-reload with minimal disruption
+class OptimizedPluginLoader:
+    async def hot_reload_plugin(self, plugin_name: str) -> bool:
+        # 1. Create new plugin instance
+        new_plugin = await self._create_plugin_instance(plugin_name)
+        
+        # 2. Transfer state from old plugin (if exists)
+        if plugin_name in self.loaded_plugins:
+            old_plugin = self.loaded_plugins[plugin_name]
+            await self._transfer_state(old_plugin, new_plugin)
+        
+        # 3. Atomic replacement
+        self.loaded_plugins[plugin_name] = new_plugin
+        
+        # 4. Clean up old plugin
+        if 'old_plugin' in locals():
+            await old_plugin.cleanup()
+        
+        return True
 ```
+
+## 🔧 Configuration & Deployment
+
+### MCP Configuration
+
+```json
+// mcp/config.json
+{
+  "servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"],
+      "env": {}
+    },
+    "github": {
+      "command": "npx", 
+      "args": ["@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "xkit-internal": {
+      "type": "internal",
+      "class": "XKitInternalServer",
+      "config": {
+        "git_enabled": true,
+        "ai_enabled": true,
+        "project_analysis": true
+      }
+    }
+  },
+  "client": {
+    "timeout": 5000,
+    "retry_attempts": 3,
+    "connection_pool_size": 10
+  }
+}
+```
+
+### Development Environment
+
+```python
+# Development configuration for hot-reload
+DEVELOPMENT_CONFIG = {
+    "plugins": {
+        "auto_reload": True,
+        "watch_files": True,
+        "reload_on_change": ["*.py", "*.json"]
+    },
+    "mcp": {
+        "development_mode": True,
+        "verbose_logging": True,
+        "mock_external_servers": True
+    },
+    "ai": {
+        "cache_responses": True,
+        "development_model": "gemini-1.5-flash-latest",
+        "max_context_tokens": 1000000
+    }
+}
+```
+
+## 🚀 Migration Path
+
+### From v2.1 to v3.0
+
+1. **Phase 1**: MCP Core Implementation
+   - Implement MCP client and protocol
+   - Create internal MCP servers
+   - Maintain v2.1 compatibility layer
+
+2. **Phase 2**: Plugin System Migration
+   - Convert existing modules to plugins
+   - Implement hot-reload capability
+   - Test plugin isolation
+
+3. **Phase 3**: Event-Driven Refactor
+   - Implement central event bus
+   - Convert synchronous calls to events
+   - Add event-based error handling
+
+4. **Phase 4**: Hexagonal Architecture
+   - Define ports and contracts
+   - Implement adapters
+   - Remove infrastructure dependencies from core
+
+5. **Phase 5**: Performance Optimization
+   - Optimize startup time
+   - Implement caching strategies
+   - Fine-tune hot-reload performance
 
 ---
 
-**Esta arquitetura garante que o XKit seja maintível, testável e extensível, seguindo as melhores práticas de desenvolvimento de software.**
+**XKit v3.0 Hybrid MCP Architecture** - *Extensible, performant, and developer-friendly* 🏗️
