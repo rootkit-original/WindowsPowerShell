@@ -281,7 +281,6 @@ class EventBus:
                 results = await asyncio.gather(*tasks, return_exceptions=True)
             
             event.status = EventStatus.COMPLETED
-            self.metrics.processed_events += 1
             
             # Add to history
             if self.enable_history:
@@ -293,7 +292,8 @@ class EventBus:
             self.metrics.failed_events += 1
             
         finally:
-            # Update processing time metrics
+            # Always increment processed events and update timing
+            self.metrics.processed_events += 1
             processing_time = asyncio.get_event_loop().time() - start_time
             self._update_processing_time(processing_time)
         
@@ -356,6 +356,11 @@ class EventBus:
     
     def _update_processing_time(self, processing_time: float) -> None:
         """Update average processing time metrics"""
+        if self.metrics.processed_events == 0:
+            # Avoid division by zero - this shouldn't happen but be safe
+            self.logger.warning("Attempting to update processing time with zero processed events")
+            return
+            
         if self.metrics.processed_events == 1:
             self.metrics.average_processing_time = processing_time
         else:
