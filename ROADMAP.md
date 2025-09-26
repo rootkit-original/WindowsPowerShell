@@ -78,7 +78,7 @@ Migração completa do XKit v2.1 de Clean Architecture para uma arquitetura híb
 
 > **Branch**: `feature/event-driven` | **Responsável**: @rootkit-original
 
-#### � Tarefas de Events
+#### 📡 Tarefas de Events
 
 - [ ] Implementar `EventBus` central com async support
 - [ ] Definir eventos do domínio (`CommandExecuted`, `ErrorOccurred`, etc.)
