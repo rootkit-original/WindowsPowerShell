@@ -1,41 +1,41 @@
-# 🎨 XKit v2.1 - Kit de Desenvolvimento Windows Inteligente
+# 🚀 XKit v3.0 - Hybrid MCP Architecture
 
-> **Sistema inteligente de desenvolvimento Windows com arquitetura Python-first e ponte PowerShell ultra-minimal**
+> **Sistema inteligente de desenvolvimento Windows com arquitetura MCP híbrida, plugins hot-reload e IA integrada**
 
-[![Version](https://img.shields.io/badge/version-2.1.2-blue.svg)](https://github.com/user/xkit)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/rootkit-original/WindowsPowerShell)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 [![Python](https://img.shields.io/badge/Python-3.11+-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## 🎯 Visão Geral
 
-O XKit v2.1 é um framework de desenvolvimento com arquitetura Clean e ponte minimal PowerShell:
+O XKit v3.0 é um framework de desenvolvimento com arquitetura híbrida MCP (Model Context Protocol):
 
-- **🐍 Python-First** - Toda lógica de negócio em Python com Clean Architecture
-- **⚡ PowerShell Minimal** - Ponte ultra-simples chamando Python
-- **🤖 Error Handling IA** - Sistema @xpilot para tratamento inteligente de erros
-- **🏗️ Clean Architecture** - Domínio/Aplicação/Infraestrutura bem definidos
-- **📱 Integrações IA** - Gemini AI + Telegram para notificações
-- **🎨 Interface Rica** - Emojis e UX elaborada em Python
+- **🔌 MCP Integration** - Extensibilidade através de servidores MCP
+- **🧩 Plugin System** - Sistema de plugins com hot-reload
+- **📡 Event-Driven** - Arquitetura orientada a eventos
+- **🏗️ Hexagonal Architecture** - Ports and Adapters pattern
+- **🤖 AI-Powered** - Gemini 2.0 Flash integrado para análises
+- **⚡ Python-First** - Toda lógica em Python, PowerShell minimal
 
 ## ✨ Recursos Principais
 
-- 🎨 **Oh-my-zsh inspired** para Windows PowerShell
-- 🤖 **IA integrada** com error handling inteligente (@xpilot)
-- 🏗️ **Clean Architecture** (Domain/Application/Infrastructure) 
-- 🔧 **Git workflow** automatizado com branching inteligente
-- 📱 **Telegram notifications** e assistente AI
-- 🐳 **Container management** (Docker/Podman) integrado
-- 🎯 **Comandos padronizados** com prefixo 'x' e nomes intuitivos
+- 🔌 **MCP Servers** - Extensibilidade via Model Context Protocol
+- 🧩 **Hot-Reload Plugins** - Sistema de plugins dinâmicos
+- 📡 **Event Bus** - Comunicação assíncrona entre componentes
+- 🤖 **AI Integration** - Gemini AI para análise e sugestões
+- 🏗️ **Clean Architecture** - Hexagonal com ports/adapters
+- 🔧 **Git Workflow** - Automação inteligente de Git
+- 📱 **Telegram Bot** - Notificações e assistente remoto
 
 ## 🚀 Instalação Rápida
 
 ```powershell
 # Clone o repositório
-git clone https://github.com/user/xkit.git "$env:USERPROFILE\Documents\WindowsPowerShell"
+git clone https://github.com/rootkit-original/WindowsPowerShell.git "$env:USERPROFILE\Documents\WindowsPowerShell"
 
-# Execute o setup (instala dependências Python)
-python Scripts\xkit-setup.py
+# Execute o XKit (auto-instala dependências)
+python Scripts\xkit_main.py
 
 # Recarregue o PowerShell
 powershell
@@ -43,131 +43,168 @@ powershell
 
 ## 🎯 Comandos Principais
 
-### 📁 Git Commands
+### 🔌 MCP Commands
 
 | Comando | Descrição | Exemplo |
 |---------|-----------|---------|
-| `xstatus` | git status | `xstatus` |
-| `xadd` | git add | `xadd .` |
-| `xcommit` | git commit | `xcommit -m "feat: nova funcionalidade"` |
-| `xpush` | git push | `xpush origin main` |
-| `xlog` | git log | `xlog --graph` |
-| `xbranch` | git branch | `xbranch feature/nova-feature` |
-| `xcheckout` | git checkout | `xcheckout main` |
+| `xkit mcp-status` | Status dos servidores MCP | `xkit mcp-status` |
+| `xkit mcp-servers` | Lista servidores conectados | `xkit mcp-servers` |
+| `xkit mcp-tools` | Lista ferramentas disponíveis | `xkit mcp-tools` |
 
-### 🐳 Container Commands
+### 🧩 Plugin Commands
 
 | Comando | Descrição | Exemplo |
 |---------|-----------|---------|
-| `xpodman` | Podman geral | `xpodman ps -a` |
-| `xcontainers` | Lista containers | `xcontainers` |
-| `ximages` | Lista imagens | `ximages` |
+| `xkit plugin-list` | Lista plugins carregados | `xkit plugin-list` |
+| `xkit plugin-load` | Carrega um plugin | `xkit plugin-load git` |
+| `xkit plugin-reload` | Recarrega plugin | `xkit plugin-reload git` |
+
+### 🤖 AI Commands
+
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `xkit ai analyze` | Análise IA completa | `xkit ai analyze "Como otimizar Python?"` |
+| `xkit ai explain` | Explica código | `xkit ai explain "def fibonacci(n):"` |
+| `xkit ai suggest` | Sugestões de melhoria | `xkit ai suggest "projeto Flask"` |
+
+### 🔧 Git Commands
+
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `xkit git-status` | Git status melhorado | `xkit git-status` |
+| `xkit git-branch` | Operações de branch | `xkit git-branch` |
+| `xkit git-create-branch` | Criar nova branch | `xkit git-create-branch feature/nova` |
 
 ## 🏗️ Arquitetura
 
-```
-XKit v2.1 Architecture
+```text
+XKit v3.0 Hybrid MCP Architecture
 ├── PowerShell Layer (Minimal)
 │   ├── Microsoft.PowerShell_profile.ps1  # Profile básico
-│   ├── xkit-minimal.ps1                  # Loader principal
-│   └── oh-my-xkit/                       # Framework plugins
-│       ├── oh-my-xkit.ps1               # Core do framework
-│       └── plugins/                      # Plugins específicos
-├── Python Layer (Business Logic)
-│   ├── xkit_main.py                     # Ponto de entrada
-│   └── xkit/                            # Clean Architecture
-│       ├── domain/                      # Entidades de negócio
-│       ├── application/                 # Casos de uso
-│       └── infrastructure/              # Serviços externos
+│   ├── xkit-v3.ps1                       # Wrapper principal
+│   └── oh-my-xkit/                       # Legacy plugins
+├── Python Core (Hexagonal)
+│   ├── xkit_main.py                      # Application entry point
+│   └── xkit/                             # Hexagonal Architecture
+│       ├── core/                         # 💎 Core Domain
+│       │   ├── application.py           # Application service
+│       │   ├── container.py             # DI container
+│       │   └── ports/                   # Interface contracts
+│       ├── adapters/                    # 🔌 External Adapters
+│       │   ├── cli/                     # Command line interface
+│       │   └── external/                # External services
+│       ├── plugins/                     # 🧩 Plugin System
+│       │   ├── manager.py               # Plugin manager
+│       │   ├── loader.py                # Dynamic loading
+│       │   └── base.py                  # Plugin interface
+│       ├── events/                      # 📡 Event System
+│       │   ├── bus.py                   # Central event bus
+│       │   ├── events.py                # Event definitions
+│       │   └── handlers/                # Event handlers
+│       ├── mcp/                         # 🔌 MCP Integration
+│       │   ├── client.py                # MCP client
+│       │   ├── protocol.py              # MCP protocol
+│       │   └── servers/                 # Internal MCP servers
+│       └── infrastructure/              # 🛠️ Infrastructure
+│           ├── ai_service.py            # Gemini AI service
+│           ├── git.py                   # Git operations
+│           └── display.py               # Rich console output
 └── Configuration
-    ├── Environment variables            # Configuração de paths
-    └── UTF-8 setup                     # Suporte a emojis
+    ├── MCP Servers                      # External MCP servers
+    └── Plugin Discovery                 # Auto-discovery system
 ```
 
-## 🤖 Sistema @xpilot
+## 🤖 Sistema AI Integrado
 
-O XKit inclui um sistema inteligente de tratamento de erros:
+O XKit v3.0 inclui integração completa com Gemini AI:
 
-- **Análise automática** - IA analisa padrões de erro
-- **Sugestões contextuais** - Oferece soluções baseadas no contexto
-- **Git integration** - Cria branches para correções
-- **Telegram alerts** - Notificações de erro por Telegram
+- **Análise Inteligente** - IA analisa código, erros e contexto
+- **Sugestões Contextuais** - Recomendações baseadas no projeto
+- **Explicação de Código** - Análise detalhada de funcionalidades
+- **Error Handling** - Diagnóstico automático de problemas
 
 ```powershell
-# Exemplo: erro é automaticamente tratado pelo @xpilot
-PS> xcommit -m "fix bug"
-❌ Error detected: git staging area empty
-🤖 @xpilot suggestion: Run 'xadd .' first
-📝 Auto-creating branch: error/empty-staging-area
+# Exemplos de uso da IA
+xkit ai analyze "Como implementar cache em Redis?"
+xkit ai explain "async def fetch_data():"
+xkit ai suggest "otimização de performance"
 ```
 
 ## 📊 Performance
 
-- ⚡ **Startup**: < 200ms para inicialização do Python
-- 🧠 **Memória**: ~15MB footprint típico
-- 🔄 **Resposta**: Comandos instantâneos via Python cache
+- ⚡ **Startup**: < 500ms para inicialização completa
+- 🧠 **Memória**: ~25MB footprint com MCP ativo
+- 🔄 **Hot Reload**: Plugins carregados dinamicamente
+- 🔌 **MCP**: Servidores externos conectados sob demanda
 
 ## 🛠️ Desenvolvimento
 
-### Estrutura do Plugin
-
-```powershell
-# PowerShell Plugin (Minimal)
-function global:meu-comando {
-    param([Parameter(ValueFromRemainingArguments)]$args)
-    Invoke-XKitPython "meu-comando" @args
-}
-```
+### Plugin Development
 
 ```python
-# Python Use Case (Rich Logic)
-class MeuComandoUseCase:
-    def __init__(self, display_service, git_service):
-        self.display = display_service
-        self.git = git_service
+# Plugin Example (Python)
+from xkit.plugins.base import XKitPlugin
+
+class MyPlugin(XKitPlugin):
+    def __init__(self):
+        super().__init__("my-plugin", "1.0.0")
     
-    def execute(self, args):
-        try:
-            # Lógica de negócio complexa aqui
-            result = self._process(args)
-            self.display.success("✅ Comando executado!")
-            return result
-        except Exception as e:
-            self.error_handler.handle("meu-comando", str(e))
+    def load(self):
+        self.register_command("my-cmd", self.handle_command)
+    
+    def handle_command(self, args):
+        return "✅ Command executed!"
+```
+
+### MCP Server Integration
+
+```python
+# MCP Server Example
+class MyMCPServer:
+    async def list_tools(self):
+        return [Tool(name="analyze", description="Analyze data")]
+    
+    async def call_tool(self, name: str, arguments: dict):
+        if name == "analyze":
+            return await self.analyze_data(arguments)
 ```
 
 ## 📚 Documentação
 
 - [📖 USAGE.md](USAGE.md) - Guia de uso completo
-- [🔧 INSTALL.md](INSTALL.md) - Instalação detalhada  
+- [🔧 INSTALL.md](INSTALL.md) - Instalação detalhada
 - [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura técnica
 - [🐛 TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Solução de problemas
 - [📝 API.md](API.md) - Referência da API Python
+- [🔌 MCP.md](MCP.md) - Guia de integração MCP
 
 ## 🤝 Contribuindo
 
 1. **Fork** o projeto
-2. **Clone** localmente
-3. **Crie** branch para sua feature
-4. **Teste** com o sistema @xpilot
+2. **Clone** localmente: `git clone https://github.com/your-user/WindowsPowerShell.git`
+3. **Crie** branch: `git checkout -b feature/nova-funcionalidade`
+4. **Teste** com MCP servers e plugins
 5. **Submeta** PR com descrição clara
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md) para detalhes.
 
 ## 📜 Changelog
 
-### v2.1.2 (2025-09-26)
+### v3.0.0 (2025-01-26)
+
+- ✨ **Major**: Hybrid MCP Architecture implementada
+- 🔌 **New**: Sistema MCP com servidores internos e externos
+- 🧩 **New**: Plugin system com hot-reload dinâmico
+- 📡 **New**: Event-driven architecture com bus central
+- 🤖 **New**: Gemini AI 2.0 Flash integração completa
+- 🏗️ **Breaking**: Migração para arquitetura hexagonal
+- 🎯 **Breaking**: Comandos padronizados `xkit <command>`
+- ⚡ **Performance**: Startup otimizado e cache inteligente
+
+### v2.1.2 (2024-12-15)
+
 - 🐛 **Fix**: README corrigido e documentação melhorada
 - 📚 **Docs**: Estrutura de documentação reorganizada
-
-### v2.1.1 (2025-09-26)  
-- 📚 **Docs**: Documentação completa recriada do zero
-- 🎯 **Standards**: Comandos padronizados com prefixo 'x'
-
-### v2.1.0 (2025-09-26)
-- ✨ **New**: Clean Architecture completa implementada
-- 🤖 **New**: Sistema @xpilot de error handling inteligente
-- 🔧 **Breaking**: Comandos padronizados (gst→xstatus, etc.)
 
 ## 📄 Licença
 
@@ -175,10 +212,11 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 
 ## 🔗 Links Úteis
 
-- [🐙 GitHub](https://github.com/user/xkit)
+- [🐙 GitHub](https://github.com/rootkit-original/WindowsPowerShell)
 - [📱 Telegram Bot](https://t.me/xkit_bot)
-- [🤖 IA Assistant](https://gemini.google.com/)
+- [🤖 Gemini AI](https://ai.google.dev/)
+- [🔌 MCP Protocol](https://modelcontextprotocol.io/)
 
 ---
 
-**XKit v2.1** - *Desenvolvimento Windows inteligente com arquitetura Python* 🚀
+**XKit v3.0** - *Framework híbrido MCP para desenvolvimento Windows* 🚀
