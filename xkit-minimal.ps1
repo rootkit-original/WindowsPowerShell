@@ -58,19 +58,19 @@ function global:xkit-reload {
     Write-Host "✅ XKit profile reloaded!" -ForegroundColor Green
 }
 
-# Git shortcuts with error handling
-function global:gst { try { git status } catch { Invoke-XKit "handle-error" $_.Exception.Message "git status" "Git operation" } }
-function global:ga { try { git add @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git add" "Git operation" } }
-function global:gc { try { git commit @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git commit" "Git operation" } }
-function global:gp { try { git push @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git push" "Git operation" } }
-function global:glog { try { git log --oneline -10 @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git log" "Git operation" } }
-function global:gb { try { git branch @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git branch" "Git operation" } }
-function global:gco { try { git checkout @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git checkout" "Git operation" } }
+# Git commands with intuitive names (x + descriptive)
+function global:xstatus { try { git status } catch { Invoke-XKit "handle-error" $_.Exception.Message "git status" "Git operation" } }
+function global:xadd { try { git add @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git add" "Git operation" } }
+function global:xcommit { try { git commit @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git commit" "Git operation" } }
+function global:xpush { try { git push @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git push" "Git operation" } }
+function global:xlog { try { git log --oneline -10 @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git log" "Git operation" } }
+function global:xbranch { try { git branch @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git branch" "Git operation" } }
+function global:xcheckout { try { git checkout @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "git checkout" "Git operation" } }
 
-# Docker/Podman shortcuts with error handling  
-function global:d { try { podman @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman" "Container operation" } }
-function global:dps { try { podman ps @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman ps" "Container operation" } }
-function global:di { try { podman images @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman images" "Container operation" } }
+# Container commands with intuitive names (x + descriptive)  
+function global:xpodman { try { podman @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman" "Container operation" } }
+function global:xcontainers { try { podman ps @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman ps" "Container operation" } }
+function global:ximages { try { podman images @args } catch { Invoke-XKit "handle-error" $_.Exception.Message "podman images" "Container operation" } }
 
 # AI & Communication (keep Out-Null for these)
 function global:question { Invoke-XKit "ask-ai" @args }
