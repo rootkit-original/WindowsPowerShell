@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "description": "XKit MCP Server Configuration",
+  "servers": {
+    "xkit-core": {
+      "type": "internal",
+      "module": "xkit.mcp.servers.core_server",
+      "class": "XKitCoreServer",
+      "description": "Core XKit functionality via MCP",
+      "enabled": true
+    },
+    "xkit-ai": {
+      "type": "internal", 
+      "module": "xkit.mcp.servers.ai_server",
+      "class": "XKitAIServer",
+      "description": "AI assistant functionality via MCP",
+      "enabled": true
+    },
+    "xkit-git": {
+      "type": "internal",
+      "module": "xkit.mcp.servers.git_server", 
+      "class": "XKitGitServer",
+      "description": "Git operations via MCP",
+      "enabled": true
+    },
+    "xkit-container": {
+      "type": "internal",
+      "module": "xkit.mcp.servers.container_server",
+      "class": "XKitContainerServer", 
+      "description": "Container management via MCP",
+      "enabled": false
+    },
+    "xkit-telegram": {
+      "type": "internal",
+      "module": "xkit.mcp.servers.telegram_server",
+      "class": "XKitTelegramServer",
+      "description": "Telegram notifications via MCP", 
+      "enabled": false
+    }
+  },
+  "connection_pool": {
+    "max_connections": 10,
+    "idle_timeout": 300,
+    "reconnect_attempts": 3,
+    "reconnect_delay": 1.0
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}
