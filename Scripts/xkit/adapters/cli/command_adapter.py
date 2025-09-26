@@ -6,8 +6,9 @@ import asyncio
 import logging
 from typing import Dict, List, Optional, Any, Callable
 
-from ...core.ports import ICommandService, IDisplayService, IEventService
+from ...core.ports import ICommandService, IDisplayService, IEventService, IAIService
 from ...core.ports.command_port import CommandResult
+from ...core.ports.ai_port import ErrorContext
 from ...events import CommandExecutedEvent, CommandFailedEvent
 
 
@@ -15,9 +16,11 @@ class CommandAdapter(ICommandService):
     """Command service adapter using existing XKit infrastructure"""
     
     def __init__(self, display_service: IDisplayService, 
-                 event_service: Optional[IEventService] = None):
+                 event_service: Optional[IEventService] = None,
+                 ai_service: Optional[IAIService] = None):
         self.display_service = display_service
         self.event_service = event_service
+        self.ai_service = ai_service
         self.logger = logging.getLogger(__name__)
         
         # Command registry
@@ -88,6 +91,23 @@ class CommandAdapter(ICommandService):
                 "handler": self._handle_debug,
                 "description": "System diagnostics",
                 "category": "debug"
+            },
+            
+            # AI commands
+            "ai-analyze": {
+                "handler": self._handle_ai_analyze,
+                "description": "AI-powered analysis and suggestions",
+                "category": "ai"
+            },
+            "ai-explain-code": {
+                "handler": self._handle_ai_explain,
+                "description": "AI code explanation",
+                "category": "ai"
+            },
+            "ai-suggest": {
+                "handler": self._handle_ai_suggest,
+                "description": "AI improvement suggestions",
+                "category": "ai"
             }
         }
         
@@ -548,3 +568,174 @@ class CommandAdapter(ICommandService):
         )
         
         await self.event_service.publish(event)
+
+    # AI Command Handlers
+    def _format_ai_response(self, title: str, query: str, result) -> str:
+        """Format AI response with clean console output"""
+        if result.confidence == 0:
+            error_msg = f"❌ {title} Failed: {result.findings[0] if result.findings else 'Unknown error'}"
+            print(error_msg)
+            return error_msg
+        
+        # Print directly for better formatting
+        print()
+        print("="*60)
+        print(f"🤖 {title}")
+        print("="*60)
+        print(f"📝 Query: {query}")
+        print(f"🎯 Confidence: {result.confidence:.0%}")
+        print("─"*60)
+        print()
+        
+        # Findings/Analysis
+        if result.findings:
+            print("🔍 ANALYSIS:")
+            for finding in result.findings:
+                # Clean up the finding text and print line by line
+                clean_finding = finding.replace("**", "").strip()
+                # Split by newlines and print each line
+                for line in clean_finding.split('\n'):
+                    if line.strip():
+                        print(line)
+            print()
+        
+        # Suggestions
+        if result.suggestions:
+            print("💡 SUGGESTIONS:")
+            for i, suggestion in enumerate(result.suggestions, 1):
+                clean_suggestion = suggestion.replace("**", "").strip()
+                print(f"   {i}. {clean_suggestion}")
+            print()
+        
+        # Footer
+        print("─"*60)
+        print("✅ Analysis completed successfully")
+        print("="*60)
+        print()
+        
+        # Return a simple confirmation message
+        return f"✅ {title} completed successfully"
+
+    async def _handle_ai_analyze(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle AI analysis command"""
+        if not args:
+            return """🤖 XKit AI Analysis
+
+Usage: xkit ai analyze "your question or text"
+
+The AI analysis feature uses advanced AI models to provide:
+• Code analysis and insights
+• Problem-solving suggestions  
+• Architecture recommendations
+• Best practice advice
+
+Example:
+  xkit ai analyze "how to optimize this Python function"
+  xkit ai analyze "explain this error message"
+  xkit ai analyze "suggest improvements for this code"
+
+💡 Tip: Use quotes around complex text with spaces"""
+
+        if not self.ai_service or not self.ai_service.is_available():
+            return """❌ AI Service Not Available
+
+The AI service is not configured or the API key is missing.
+
+🔧 Setup Instructions:
+1. Configure GEMINI_API_KEY in your environment
+2. Make sure the key is valid and active
+3. Restart XKit
+
+💡 Your key should be set in PowerShell profile:
+$env:GEMINI_API_KEY = 'your-api-key-here'"""
+
+        query = " ".join(args)
+        
+        try:
+            # Use debug_assistance for general analysis
+            result = await self.ai_service.debug_assistance(
+                problem_description=query,
+                code_context="",
+                error_logs=""
+            )
+            
+            return self._format_ai_response("AI ERROR ANALYSIS", query, result)
+                
+        except Exception as e:
+            return f"❌ AI Service Error: {str(e)}"
+
+    async def _handle_ai_explain(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle AI code explanation command"""
+        if not args:
+            return """🤖 XKit AI Code Explanation
+
+Usage: xkit ai explain "your code here"
+
+The AI explanation feature provides:
+• Line-by-line code breakdown
+• Function and class explanations
+• Algorithm analysis
+• Performance insights
+
+Example:
+  xkit ai explain "def fibonacci(n): return n if n <= 1 else fibonacci(n-1) + fibonacci(n-2)"
+
+💡 Tip: Works best with complete functions or code blocks"""
+        
+        if not self.ai_service or not self.ai_service.is_available():
+            return """❌ AI Service Not Available
+
+Configure GEMINI_API_KEY to enable AI code explanation."""
+
+        code = " ".join(args)
+        
+        try:
+            result = await self.ai_service.explain_code(
+                code=code,
+                language="python",  # Default, could be enhanced to detect language
+                context=context
+            )
+            
+            return self._format_ai_response("AI CODE EXPLANATION", code, result)
+                
+        except Exception as e:
+            return f"❌ AI Service Error: {str(e)}"
+
+    async def _handle_ai_suggest(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle AI suggestions command"""
+        if not args:
+            return """🤖 XKit AI Suggestions
+
+Usage: xkit ai suggest "describe what you want to improve"
+
+Get AI-powered suggestions for:
+• Code optimization
+• Architecture improvements  
+• Tool recommendations
+• Best practices
+
+Example:
+  xkit ai suggest "make this API faster"
+  xkit ai suggest "improve error handling"
+
+💡 Context-aware suggestions based on your XKit environment"""
+
+        if not self.ai_service or not self.ai_service.is_available():
+            return """❌ AI Service Not Available
+
+Configure GEMINI_API_KEY to enable AI suggestions."""
+
+        context_text = " ".join(args)
+        
+        try:
+            # Treat the suggestion request as code to be improved
+            result = await self.ai_service.suggest_improvements(
+                code=context_text,
+                language="general",
+                focus="optimization"
+            )
+            
+            return self._format_ai_response("AI SUGGESTIONS", context_text, result)
+                
+        except Exception as e:
+            return f"❌ AI Service Error: {str(e)}"
