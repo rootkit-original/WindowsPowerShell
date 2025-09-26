@@ -1,6 +1,6 @@
 # XKit v2.1 - Guia de Instalação
 
-## 🚀 Instalação Rápida
+## 🚀 Instalação Rápida (Arquitetura Ultra-Minimal)
 
 ### Pré-requisitos
 
@@ -10,43 +10,185 @@ Certifique-se de ter:
 - **PowerShell 5.1+**
 - **Python 3.11+**
 - **Git** (opcional mas recomendado)
-- **Podman ou Docker** (opcional)
 
-### Passo 1: Baixar os Arquivos
+### Passo 1: Estrutura de Arquivos
 
-1. **Clone ou baixe** os arquivos para:
-   ```powershell
+1. **Clone ou copie** os arquivos para:
+   ```
    $HOME\Documents\WindowsPowerShell\
    ```
 
-2. **Estrutura esperada**:
+2. **Estrutura necessária** (ultra-minimal):
    ```
    WindowsPowerShell/
-   ├── Microsoft.PowerShell_profile.ps1
-   ├── gh-copilot.ps1
+   ├── Microsoft.PowerShell_profile.ps1  # Ultra-minimal loader
+   ├── xkit-minimal.ps1                  # ⭐ Single bridge file
    └── Scripts/
-       ├── xkit_compact.py
-       └── xkit/
+       ├── xkit_main.py                  # ⭐ Python entry point
+       └── xkit/                         # Clean Architecture
+           ├── domain/
+           ├── application/
+           └── infrastructure/
    ```
 
-### Passo 2: Configurar Variáveis de Ambiente
+### Passo 2: Configurar API Keys (Opcional)
 
-Edite o arquivo `Microsoft.PowerShell_profile.ps1` e configure:
-
-```powershell
-# XKit v2.1 Environment Variables
-$env:GEMINI_API_KEY = 'sua_api_key_aqui'
-$env:TELEGRAM_TOKEN = 'seu_token_aqui'
-$env:ADMIN_ID = 'seu_id_aqui'
-```
-
-### Passo 3: Instalar Dependências Python
+Edite `xkit-minimal.ps1` e configure suas chaves:
 
 ```powershell
-pip install requests pathlib dataclasses
+# API Keys (optional)
+$env:GEMINI_API_KEY = 'your_gemini_api_key'
+$env:TELEGRAM_TOKEN = 'your_telegram_bot_token'
+$env:ADMIN_ID = 'your_telegram_user_id'
 ```
 
-### Passo 4: Testar Instalação
+### Passo 3: Testar Instalação
+
+```powershell
+# Reiniciar PowerShell ou recarregar perfil
+. $PROFILE
+
+# Testar comando básico
+xkit-version
+
+# Testar sistema completo
+xtest-error
+```
+
+## ✅ Validação da Instalação
+
+### Verificações Básicas
+
+```powershell
+# 1. Verificar se perfil carregou
+$global:XKitLoaded                    # Should return: True
+
+# 2. Testar comando principal
+xkit-help                            # Should show command list
+
+# 3. Verificar encoding UTF-8
+$env:PYTHONIOENCODING               # Should return: utf-8
+```
+
+### Teste de Funcionalidades
+
+```powershell
+# Testar interface rica com emojis
+xkit-status
+
+# Testar sistema de error handling
+xtest-error
+
+# Testar commands shortcuts
+ga .                                # git add . with error handling
+```
+
+## 🔧 Configuração Avançada
+
+### Customizar API Keys
+
+Se você quiser usar IA e notificações Telegram:
+
+1. **Gemini AI** (opcional):
+   - Obtenha chave em: https://ai.google.dev/
+   - Configure: `$env:GEMINI_API_KEY = 'sua_chave'`
+
+2. **Telegram Bot** (opcional):
+   - Crie bot via @BotFather
+   - Configure: `$env:TELEGRAM_TOKEN = 'bot_token'`
+   - Configure: `$env:ADMIN_ID = 'your_telegram_id'`
+
+### Personalizar Comandos
+
+Para adicionar comandos customizados:
+
+1. **Edite** `xkit-minimal.ps1` - adicione wrapper PowerShell
+2. **Edite** `xkit_main.py` - adicione lógica Python
+3. **Siga** Clean Architecture - mantenha separação de responsabilidades
+
+## 🐛 Resolução de Problemas
+
+### Problema: Profile não carrega
+
+```powershell
+# Verificar se arquivo existe
+Test-Path $PROFILE                   # Should return: True
+
+# Carregar manualmente
+. $PROFILE
+
+# Verificar execution policy
+Get-ExecutionPolicy
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser  # If needed
+```
+
+### Problema: Python não encontrado
+
+```powershell
+# Verificar Python
+python --version                     # Should show Python 3.11+
+
+# Se não funcionar, instalar Python 3.11+ e reiniciar terminal
+```
+
+### Problema: Emojis não aparecem
+
+```powershell
+# Sistema configura automaticamente, mas se necessário:
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+### Problema: Comandos não funcionam
+
+```powershell
+# Verificar se xkit-minimal.ps1 existe
+Test-Path "C:\Users\$env:USERNAME\Documents\WindowsPowerShell\xkit-minimal.ps1"
+
+# Verificar se Python main existe  
+Test-Path "C:\Users\$env:USERNAME\Documents\WindowsPowerShell\Scripts\xkit_main.py"
+
+# Testar Python entry point manualmente
+python "C:\Users\$env:USERNAME\Documents\WindowsPowerShell\Scripts\xkit_main.py" show-version
+```
+
+## ⚡ Performance e Otimização
+
+### Startup Rápido
+
+O sistema é otimizado para:
+- **PowerShell minimal** - Carregamento instantâneo
+- **Python lazy-loading** - Carrega apenas quando necessário  
+- **Cache inteligente** - Detecta mudanças automaticamente
+- **UTF-8 nativo** - Emojis funcionam sem overhead
+
+### Uso de Memória
+
+- **Footprint baixo** - PowerShell praticamente vazio
+- **Python modular** - Carrega apenas módulos necessários
+- **Clean Architecture** - Dependências bem definidas
+
+## 🎯 Próximos Passos
+
+Após instalação bem-sucedida:
+
+1. **Leia** [USAGE.md](USAGE.md) - Manual completo de uso
+2. **Teste** `xtest-error` - Simular erros para conhecer o sistema
+3. **Configure** APIs (opcional) - Para funcionalidades avançadas
+4. **Explore** comandos - Use `xkit-help` para ver opções
+
+## 🏗️ Desenvolvimento
+
+Para contribuir ou customizar:
+
+1. **Estude** [ARCHITECTURE.md](ARCHITECTURE.md) - Documentação técnica  
+2. **Veja** [.github/copilot-instructions.md](.github/copilot-instructions.md) - Instruções desenvolvimento
+3. **Siga** Clean Architecture - Separação domain/application/infrastructure
+4. **Teste** modificações com `xtest-error` antes de usar
+
+---
+
+**XKit v2.1** - Instalação simples, arquitetura poderosa! 🚀
 
 1. **Feche** o PowerShell atual
 2. **Abra** um novo PowerShell

@@ -4,7 +4,10 @@ Domain interfaces - Contracts for data access and external services
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict
 from pathlib import Path
-from .entities import GitInfo, ReadmeInfo, ProjectInfo, ContainerInfo, DevelopmentContext
+from .entities import (
+    GitInfo, ReadmeInfo, ProjectInfo, ContainerInfo, DevelopmentContext,
+    XKitError, XPilotAnalysis, ErrorType, ErrorSeverity
+)
 
 
 class IFileSystemRepository(ABC):
@@ -113,4 +116,66 @@ class IDisplayService(ABC):
     @abstractmethod
     def show_status(self, context: 'DevelopmentContext') -> None:
         """Show detailed status"""
+        pass
+
+
+class IErrorHandler(ABC):
+    """Interface for error handling operations"""
+    
+    @abstractmethod
+    def create_error(self, message: str, command: str = "", context: str = "") -> XKitError:
+        """Create a new error instance"""
+        pass
+    
+    @abstractmethod
+    def analyze_error(self, error: XKitError) -> XPilotAnalysis:
+        """Analyze error and provide resolution suggestions"""
+        pass
+    
+    @abstractmethod
+    def store_error(self, error: XKitError) -> None:
+        """Store error for tracking"""
+        pass
+    
+    @abstractmethod
+    def get_last_error(self) -> Optional[XKitError]:
+        """Get the most recent error"""
+        pass
+    
+    @abstractmethod
+    def get_error_count(self) -> int:
+        """Get total error count"""
+        pass
+
+
+class IGitBranchManager(ABC):
+    """Interface for Git branch operations"""
+    
+    @abstractmethod
+    def create_error_branch(self, error: XKitError) -> str:
+        """Create a new branch for error resolution"""
+        pass
+    
+    @abstractmethod
+    def commit_error_report(self, error: XKitError, branch_name: str) -> bool:
+        """Commit error report to branch"""
+        pass
+    
+    @abstractmethod
+    def switch_to_previous_branch(self) -> bool:
+        """Switch back to previous branch"""
+        pass
+
+
+class IXPilotAgent(ABC):
+    """Interface for XPilot AI agent"""
+    
+    @abstractmethod
+    def analyze_error(self, error: XKitError) -> XPilotAnalysis:
+        """Analyze error and provide intelligent suggestions"""
+        pass
+    
+    @abstractmethod
+    def generate_auto_fix(self, error: XKitError) -> Optional[str]:
+        """Generate automatic fix script if possible"""
         pass

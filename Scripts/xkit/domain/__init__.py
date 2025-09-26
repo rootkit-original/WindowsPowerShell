@@ -6,7 +6,11 @@ from .entities import (
     GitInfo, 
     ReadmeInfo,
     ContainerInfo,
-    DevelopmentContext
+    DevelopmentContext,
+    XKitError,
+    XPilotAnalysis,
+    ErrorSeverity,
+    ErrorType
 )
 
 from .interfaces import (
@@ -15,7 +19,10 @@ from .interfaces import (
     IContainerRepository,
     IProjectAnalyzer,
     ICommandExecutor,
-    IDisplayService
+    IDisplayService,
+    IErrorHandler,
+    IGitBranchManager,
+    IXPilotAgent
 )
 
 __all__ = [

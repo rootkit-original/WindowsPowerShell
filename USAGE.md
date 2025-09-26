@@ -1,53 +1,269 @@
 # XKit v2.1 - Guia de Uso
 
-## 🎯 Visão Geral dos Comandos
+## 🎯 Visão Geral
 
-O XKit oferece uma interface intuitiva com comandos organizados por categoria.
+O XKit v2.1 usa arquitetura Python-first com ponte PowerShell ultra-minimal. Todos os comandos são implementados em Python com Clean Architecture.
 
-## 📋 Comandos Principais
+## 📋 Comandos Disponíveis
 
-### Informações e Ajuda
+### 🛠️ Comandos Principais
 
 ```powershell
-# Mostra todos os comandos disponíveis
-xkit-help
+# Informações e Ajuda
+xkit-help          # Lista todos os comandos disponíveis
+xkit-status        # Status detalhado do ambiente atual
+xkit-version       # Versão do XKit
 
-# Status detalhado do ambiente
+# Error Handling (@xpilot Agent)
+xtest-error        # Simular erro para testar sistema
+xerr               # Ver detalhes do último erro
+xfix               # Tentar resolver erro automaticamente
+
+# Inteligência Artificial
+question "pergunta"  # Fazer pergunta ao Gemini AI
+tg "mensagem"       # Enviar mensagem via Telegram
+```
+
+### 🐍 Comandos Git com Error Handling
+
+```powershell
+# Git shortcuts com tratamento de erros integrado
+ga .               # git add .
+gc "msg"          # git commit -m "msg"  
+gp                # git push
+gl                # git log --oneline -10
+gb                # git branch
+gco branch        # git checkout branch
+
+# Enhanced git command (with full error handling)
+xgit status       # Git com @xpilot error handling
+```
+
+### 🐳 Comandos Docker com Error Handling
+
+```powershell
+# Docker shortcuts com tratamento de erros
+d ps              # docker ps
+dps               # docker ps  
+di                # docker images
+
+# Enhanced docker command
+xdocker ps        # Docker com @xpilot error handling
+```
+
+### 🐍 Python com Error Handling
+
+```powershell
+# Enhanced python command
+xpython script.py  # Python com @xpilot error handling
+```
+
+## 🤖 Sistema @xpilot Error Handling
+
+### Como Funciona
+
+1. **Detecção Automática**: Comandos enhanced (`xgit`, `xdocker`, `xpython`) detectam erros
+2. **Análise IA**: Python AI agent analisa o erro usando padrões conhecidos
+3. **Git Integration**: Sistema cria branch de erro automaticamente se necessário
+4. **Sugestões**: Fornece sugestões contextuais e possíveis auto-fixes
+5. **Workflow**: Usuário pode aceitar correções ou continuar manualmente
+
+### Testando o Sistema
+
+```powershell
+# Testar diferentes tipos de erro
+xtest-error                    # Erro genérico (comando não encontrado)
+xtest-error syntax            # Erro de sintaxe
+xtest-error access            # Erro de acesso/permissão
+xtest-error file              # Arquivo não encontrado
+xtest-error command           # Comando não reconhecido
+```
+
+### Comandos de Recovery
+
+```powershell
+xerr               # Ver detalhes completos do último erro
+xfix               # Tentar resolver automaticamente
+xtest-error        # Simular novos erros para teste
+```
+
+## 🎨 Interface Rica
+
+### Welcome Screen
+
+Ao iniciar o PowerShell, você verá:
+
+```text
+🚀 XKit - Ambiente de desenvolvimento ativo
+==================================================
+📁 Projeto: WindowsPowerShell
+📖 XKit v2.1 - Kit de Desenvolvimento Windows Inteligente
+💭 > **Sistema inteligente com AI e interface compacta estilo oh-my-zsh**
+🛠️ Tecnologias: Python, PowerShell, Git
+🌿 Branch: master (17 mudanças)
+🐳 Container: Podman disponível
+
+💡 Digite 'xkit-help' para ver comandos disponíveis
+==================================================
+🪟 📁WindowsPowerShell 🌿master ±17 📦podman 🐍💙📝
+   ⚠️  2 anomalia(s) detectada(s)
+   💡 xkit-help para comandos
+```
+
+### Status Compact
+
+Interface ultra-compacta mostra:
+- 🪟 **Windows** indicator
+- 📁 **Projeto atual**
+- 🌿 **Git branch** e mudanças  
+- 📦 **Container engine** disponível
+- 🐍💙📝 **Tecnologias** detectadas
+- ⚠️ **Anomalias** se houver
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente
+
+Edite as configurações em `xkit-minimal.ps1`:
+
+```powershell
+# API Keys (hard-coded for simplicity)
+$env:GEMINI_API_KEY = 'your_gemini_api_key'
+$env:TELEGRAM_TOKEN = 'your_telegram_bot_token'
+$env:ADMIN_ID = 'your_telegram_user_id'
+
+# Encoding para emojis (automatically set)
+$env:PYTHONIOENCODING = "utf-8"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+### Arquivos Esperados
+
+O sistema detecta automaticamente tecnologias baseado nos arquivos:
+
+**Python Projects:**
+- `requirements.txt` - Lista de dependências
+- `pyproject.toml` - Configuração moderna Python  
+- `setup.py` - Script tradicional de instalação
+
+**Node.js Projects:**
+- `package.json` - Configuração do projeto
+
+**Docker Projects:**
+- `Dockerfile` - Definição da imagem
+- `docker-compose.yml` - Orquestração de containers
+
+## 🚨 Detecção de Anomalias
+
+O sistema detecta automaticamente:
+
+### ⚠️ Projetos com Muitas Mudanças
+```text
+🚨 XKit Alert - 14:16:18
+📁 Projeto: xAntivirus
+📝 Muitas mudanças não commitadas: 28
+```
+
+### ⚠️ Projetos sem Configuração
+```text
+⚠️ Projeto Python sem arquivo de configuração
+```
+**Solução**: Criar `requirements.txt` ou `pyproject.toml`
+
+### ⚠️ Outros Problemas
+- Containers parados inesperadamente
+- Dependências em falta
+- Problemas de permissão
+- Comandos não encontrados
+
+## 🎯 Exemplos Práticos
+
+### Workflow Típico de Desenvolvimento
+
+```powershell
+# 1. Ver status do projeto
 xkit-status
 
-# Informações sobre o projeto atual
-xkit-info
+# 2. Se houver anomalias, investigar
+xerr
+
+# 3. Trabalhar normalmente com error handling
+xgit status
+xgit add .
+xgit commit -m "feat: nova funcionalidade"
+
+# 4. Se der erro, o @xpilot analisa automaticamente
+xfix  # Tentar resolver automaticamente
+
+# 5. Fazer perguntas para IA quando necessário
+question "como otimizar este código Python?"
+
+# 6. Enviar notificações importantes
+tg "Deploy realizado com sucesso!"
 ```
 
-### Inteligência Artificial
+### Simulação de Erros para Teste
 
 ```powershell
-# Sugestões inteligentes baseadas no contexto
-xkit-ai
+# Testar sistema de error handling
+xtest-error                    # Comando não encontrado
+xtest-error syntax            # Erro de sintaxe  
+xtest-error access            # Problema de permissão
+xtest-error file              # Arquivo não existe
 
-# Resolver problema específico
-xkit-solve "erro ao executar comando"
-
-# Análise de contexto avançada
-xkit-ai "como otimizar este projeto?"
+# Ver como o sistema responde
+xerr                          # Analisar erro
+xfix                          # Tentar correção automática
 ```
 
-### Gerenciamento de Containers
+## 💡 Dicas e Truques
 
+### Performance
+- Sistema usa **lazy loading** - Python só carrega quando necessário
+- **Cache inteligente** - Detecta mudanças e recarrega contexto
+- **UTF-8 nativo** - Emojis funcionam perfeitamente no Windows
+
+### Debugging
+- Use `xtest-error` para testar diferentes cenários
+- `xerr` mostra detalhes completos com stack trace
+- Sistema cria logs detalhados para troubleshooting
+
+### Customização
+- Edite `xkit-minimal.ps1` para configurações básicas
+- Modifique módulos Python em `Scripts/xkit/` para funcionalidades avançadas
+- Sistema segue Clean Architecture - fácil de estender
+
+## 🆘 Resolução de Problemas
+
+### Comando não funciona
 ```powershell
-# Status dos containers
-container-status
+# Verificar se perfil carregou
+$global:XKitLoaded  # Deve retornar $true
 
-# Subir serviços com compose
-compose-up
-
-# Parar serviços
-compose-down
-
-# Comandos diretos do Podman/Docker
-podman ps
-docker images
+# Recarregar perfil manualmente
+. $PROFILE
 ```
+
+### Erros de encoding
+```powershell
+# Sistema configura UTF-8 automaticamente
+# Se ainda houver problemas, execute:
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+### Python não encontrado
+```powershell
+# Verificar Python disponível
+python --version
+
+# Sistema usa 'python' por padrão
+# Editar xkit-minimal.ps1 se necessário
+```
+
+---
+
+**XKit v2.1** - PowerShell minimal, Python maximal! 🚀
 
 ### Utilitários
 

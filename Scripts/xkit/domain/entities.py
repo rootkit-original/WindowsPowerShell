@@ -1,9 +1,86 @@
 """
 Domain entities - Core business objects
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from pathlib import Path
+from datetime import datetime
+from enum import Enum
+
+
+class ErrorSeverity(Enum):
+    LOW = "low"
+    MEDIUM = "medium" 
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ErrorType(Enum):
+    COMMAND_NOT_FOUND = "command_not_found"
+    SYNTAX_ERROR = "syntax_error"
+    ACCESS_DENIED = "access_denied"
+    FILE_NOT_FOUND = "file_not_found"
+    GENERIC = "generic"
+
+
+@dataclass
+class XKitError:
+    """Represents an error in the XKit system"""
+    id: int
+    message: str
+    command: str = ""
+    context: str = ""
+    timestamp: datetime = field(default_factory=datetime.now)
+    error_type: ErrorType = ErrorType.GENERIC
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM
+    resolution_suggestions: List[str] = field(default_factory=list)
+    auto_fix_available: bool = False
+    auto_fix_script: Optional[str] = None
+    git_branch: Optional[str] = None
+    
+    @property
+    def emoji_prefix(self) -> str:
+        """Get emoji based on error type"""
+        emoji_map = {
+            ErrorType.COMMAND_NOT_FOUND: "🔍",
+            ErrorType.SYNTAX_ERROR: "📝",
+            ErrorType.ACCESS_DENIED: "🔒", 
+            ErrorType.FILE_NOT_FOUND: "📁",
+            ErrorType.GENERIC: "⚠️"
+        }
+        return emoji_map.get(self.error_type, "❌")
+    
+    @property
+    def severity_color(self) -> str:
+        """Get color based on severity"""
+        color_map = {
+            ErrorSeverity.LOW: "yellow",
+            ErrorSeverity.MEDIUM: "red",
+            ErrorSeverity.HIGH: "bright_red",
+            ErrorSeverity.CRITICAL: "red on white"
+        }
+        return color_map.get(self.severity, "red")
+
+
+@dataclass
+class XPilotAnalysis:
+    """Analysis result from XPilot agent"""
+    summary: str
+    suggestions: List[str] = field(default_factory=list)
+    auto_fix_available: bool = False
+    auto_fix_script: Optional[str] = None
+    confidence: float = 0.0  # 0-1 confidence score
+    
+    @property
+    def confidence_emoji(self) -> str:
+        if self.confidence >= 0.9:
+            return "🎯"
+        elif self.confidence >= 0.7:
+            return "✅"
+        elif self.confidence >= 0.5:
+            return "🤔"
+        else:
+            return "❓"
 
 
 @dataclass

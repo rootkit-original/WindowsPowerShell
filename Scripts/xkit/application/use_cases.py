@@ -6,11 +6,16 @@ from pathlib import Path
 from ..domain import (
     DevelopmentContext, 
     ProjectInfo,
+    XKitError,
+    XPilotAnalysis,
     IFileSystemRepository,
     IGitRepository,
     IContainerRepository,
     IProjectAnalyzer,
-    IDisplayService
+    IDisplayService,
+    IErrorHandler,
+    IGitBranchManager,
+    IXPilotAgent
 )
 
 
@@ -141,3 +146,113 @@ class ExecuteContainerCommandUseCase:
         # This would be implemented to execute the actual command
         # For now, just return success if container is available
         return True
+
+
+class HandleErrorUseCase:
+    """Use case for handling errors in the XKit system"""
+    
+    def __init__(
+        self,
+        error_handler: IErrorHandler,
+        display_service: IDisplayService,
+        git_branch_manager: IGitBranchManager,
+        xpilot_agent: IXPilotAgent
+    ):
+        self.error_handler = error_handler
+        self.display_service = display_service
+        self.git_branch_manager = git_branch_manager
+        self.xpilot_agent = xpilot_agent
+    
+    def execute(self, message: str, command: str = "", context: str = "") -> None:
+        """Handle error with full XPilot resolution workflow"""
+        # Create error instance
+        error = self.error_handler.create_error(message, command, context)
+        
+        # Store error for tracking
+        self.error_handler.store_error(error)
+        
+        # Show error details with emojis
+        self.display_service.show_error(error)
+        
+        # Ask user for action
+        user_choice = self.display_service.prompt_error_action()
+        
+        if user_choice.lower() in ['y', 'yes']:
+            self._start_xpilot_resolution(error)
+        elif user_choice.lower() in ['d', 'details']:
+            self.display_service.show_error_details(error)
+            # Recurse for another choice
+            self.execute(message, command, context)
+        elif user_choice.lower() in ['s', 'skip']:
+            self.display_service.show_skip_message()
+        else:
+            self.display_service.show_ignore_message()
+    
+    def _start_xpilot_resolution(self, error: XKitError) -> None:
+        """Start XPilot resolution process"""
+        try:
+            # Create error branch
+            branch_name = self.git_branch_manager.create_error_branch(error)
+            error.git_branch = branch_name
+            
+            # Commit error report
+            self.git_branch_manager.commit_error_report(error, branch_name)
+            
+            # Analyze with XPilot
+            analysis = self.xpilot_agent.analyze_error(error)
+            
+            # Show analysis results
+            self.display_service.show_xpilot_analysis(error, analysis)
+            
+            # Apply auto-fix if available and user agrees
+            if analysis.auto_fix_available:
+                if self.display_service.confirm_auto_fix():
+                    self._apply_auto_fix(error, analysis)
+            
+            # Ask if user wants to return to main branch
+            if self.display_service.confirm_return_to_main():
+                self.git_branch_manager.switch_to_previous_branch()
+                
+        except Exception as e:
+            self.display_service.show_git_error(str(e))
+            # Continue with analysis without git operations
+            analysis = self.xpilot_agent.analyze_error(error)
+            self.display_service.show_xpilot_analysis(error, analysis)
+    
+    def _apply_auto_fix(self, error: XKitError, analysis: XPilotAnalysis) -> None:
+        """Apply automatic fix"""
+        if analysis.auto_fix_script:
+            # This would execute the fix script
+            self.display_service.show_auto_fix_applied()
+
+
+class ShowErrorDetailsUseCase:
+    """Use case for showing detailed error information"""
+    
+    def __init__(self, error_handler: IErrorHandler, display_service: IDisplayService):
+        self.error_handler = error_handler
+        self.display_service = display_service
+    
+    def execute(self) -> None:
+        """Show details of the last error"""
+        error = self.error_handler.get_last_error()
+        if error:
+            self.display_service.show_error_details(error)
+        else:
+            self.display_service.show_no_error_message()
+
+
+class RetryLastErrorUseCase:
+    """Use case for retrying the last error resolution"""
+    
+    def __init__(self, handle_error_use_case: HandleErrorUseCase, error_handler: IErrorHandler):
+        self.handle_error_use_case = handle_error_use_case
+        self.error_handler = error_handler
+    
+    def execute(self) -> None:
+        """Retry resolution of the last error"""
+        error = self.error_handler.get_last_error()
+        if error:
+            self.handle_error_use_case.execute(error.message, error.command, error.context)
+        else:
+            print("ℹ️  No recent error to retry")

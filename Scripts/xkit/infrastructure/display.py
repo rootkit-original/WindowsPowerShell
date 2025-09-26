@@ -1,8 +1,9 @@
 """
 Display service implementation
 """
+from typing import Optional
 from ..domain.interfaces import IDisplayService
-from ..domain.entities import DevelopmentContext
+from ..domain.entities import DevelopmentContext, XKitError, XPilotAnalysis
 from .container import ContainerRepository
 
 
@@ -156,3 +157,131 @@ class ConsoleDisplayService(IDisplayService):
             print(f"🐳 Container engine: {context.container.engine_type} ({context.container.engine_path})")
         else:
             print("🐳 Nenhum container engine detectado")
+    
+    # Error handling display methods
+    def show_error(self, error: XKitError) -> None:
+        """Show error information with emojis"""
+        print(f"\n{error.emoji_prefix} XKit Error Detected (#{error.id})")
+        print("─" * 50)
+        print(f"🚨 Error: {error.message}")
+        
+        if error.command:
+            print(f"⚡ Command: {error.command}")
+        
+        if error.context:
+            print(f"📍 Context: {error.context}")
+        
+        print(f"🕒 Time: {error.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"📊 Severity: {error.severity.value.upper()}")
+        print("─" * 50)
+    
+    def prompt_error_action(self) -> str:
+        """Prompt user for error action"""
+        return input("\n🤖 Want to stop and resolve with @xpilot? (y/N/s=skip/d=details): ").strip()
+    
+    def show_error_details(self, error: XKitError) -> None:
+        """Show detailed error information"""
+        print(f"\n📊 Detailed Error Information")
+        print("═" * 40)
+        print(f"Error ID: #{error.id}")
+        print(f"Type: {error.error_type.value}")
+        print(f"Severity: {error.severity.value}")
+        print(f"Timestamp: {error.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Message: {error.message}")
+        print(f"Command: {error.command or 'N/A'}")
+        print(f"Context: {error.context or 'N/A'}")
+        
+        if error.git_branch:
+            print(f"Git Branch: {error.git_branch}")
+        
+        if error.resolution_suggestions:
+            print("\n💡 Suggestions:")
+            for i, suggestion in enumerate(error.resolution_suggestions, 1):
+                print(f"  {i}. {suggestion}")
+    
+    def show_skip_message(self) -> None:
+        """Show skip message"""
+        print("⏭️  Error skipped. Continuing...")
+    
+    def show_ignore_message(self) -> None:
+        """Show ignore message"""
+        print("❌ Error ignored. Use 'xerr' to review later.")
+    
+    def show_xpilot_analysis(self, error: XKitError, analysis: XPilotAnalysis) -> None:
+        """Show XPilot analysis results"""
+        print(f"\n🤖 @xpilot Analysis Starting...")
+        print("─" * 40)
+        print(f"🔍 Analysis: {analysis.summary}")
+        
+        if analysis.suggestions:
+            print(f"\n💡 Suggested Actions:")
+            for i, suggestion in enumerate(analysis.suggestions, 1):
+                print(f"  • {suggestion}")
+        
+        print(f"\n{analysis.confidence_emoji} Confidence: {analysis.confidence:.0%}")
+        
+        if analysis.auto_fix_available:
+            print("🔧 Auto-fix available!")
+    
+    def confirm_auto_fix(self) -> bool:
+        """Ask user to confirm auto-fix"""
+        response = input("\n🔧 Apply automatic fix? (y/N): ").strip().lower()
+        return response in ['y', 'yes']
+    
+    def show_auto_fix_applied(self) -> None:
+        """Show auto-fix applied message"""
+        print("✅ Automatic fix applied successfully!")
+    
+    def confirm_return_to_main(self) -> bool:
+        """Ask user to return to main branch"""
+        response = input("\n🔄 Resolution complete. Return to main branch? (y/N): ").strip().lower()
+        return response in ['y', 'yes']
+    
+    def show_git_error(self, error_message: str) -> None:
+        """Show git operation error"""
+        print(f"❌ Git operation failed: {error_message}")
+        print("🔄 Continuing with analysis...")
+    
+    def show_no_error_message(self) -> None:
+        """Show no error available message"""
+        print("ℹ️  No error information available")
+    
+    def show_help(self, context: DevelopmentContext = None) -> None:
+        """Show comprehensive help with emojis"""
+        print("\n🎨 Oh My XKit v2.1.0 - Command Reference")
+        print("═" * 60)
+        
+        print("\n📁 Git Commands:")
+        print("  gst    - git status")
+        print("  ga     - git add")
+        print("  gc     - git commit")
+        print("  gp     - git push")
+        print("  glog   - git log")
+        print("  gb     - git branch")
+        print("  gco    - git checkout")
+        
+        print("\n🐳 Container Commands:")
+        print("  d      - podman")
+        print("  dps    - podman ps")
+        print("  di     - podman images")
+        
+        print("\n🤖 AI & Telegram:")
+        print("  question [text] - Ask AI assistant")
+        print("  tg [message]    - Send Telegram message")
+        
+        print("\n🛡️  Error Handling:")
+        print("  xerr           - Show last error details")
+        print("  xfix           - Retry last error resolution")
+        print("  xtest-error    - Test error handler")
+        
+        print("\n🔧 Enhanced Commands:")
+        print("  xgit    - Git with error handling")
+        print("  xpython - Python with error handling")
+        print("  xdocker - Docker with error handling")
+        print("  xnpm    - NPM with error handling")
+        
+        print("\n💡 System:")
+        print("  xkit-help      - Show this help")
+        print("  xkit-version   - Show version info")
+        print("  xkit-reload    - Reload framework")
+        print()

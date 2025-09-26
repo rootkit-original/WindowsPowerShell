@@ -1,12 +1,13 @@
 # Oh My XKit - PowerShell Framework
-# Simple and functional version
+# Configuration-based version with absolute paths
 
-$XKIT_VERSION = "2.1.0"
-$OH_MY_XKIT = "$PSScriptRoot"
+# Use global configuration or fallback
+$XKIT_VERSION = $global:XKIT_VERSION ?? "2.1.0"
+$OH_MY_XKIT = $global:XKIT_OH_MY_XKIT ?? "$PSScriptRoot"
 
 # Configuration
-$XKIT_THEME = "powerlevel10k-xkit"
-$XKIT_PLUGINS = @("git", "docker", "ai-assistant", "telegram-notifier")
+$XKIT_THEME = $global:XKIT_THEME ?? "powerlevel10k-xkit"
+$XKIT_PLUGINS = $global:XKIT_PLUGIN_LIST ?? @("git", "docker", "ai-assistant", "telegram-notifier", "error-handler-simple", "command-wrapper")
 
 # Load theme function
 function Load-XKitTheme {
@@ -23,9 +24,16 @@ function Load-XKitTheme {
 # Load plugins function
 function Load-XKitPlugins {
     foreach ($plugin in $XKIT_PLUGINS) {
+        # Try structured plugin first
         $pluginPath = "$OH_MY_XKIT\plugins\$plugin\$plugin.plugin.ps1"
         if (Test-Path $pluginPath) {
             . $pluginPath
+        } else {
+            # Try simple plugin file
+            $simplePluginPath = "$OH_MY_XKIT\plugins\$plugin.ps1"
+            if (Test-Path $simplePluginPath) {
+                . $simplePluginPath
+            }
         }
     }
 }
@@ -54,26 +62,27 @@ function Set-DefaultXKitPrompt {
     }
 }
 
-# Utility functions
-function xkit-version { 
-    Write-Host "Oh My XKit v$XKIT_VERSION" -ForegroundColor Green
+function global:xkit-version { 
+    Write-Host "`n[XKIT] Oh My XKit v$XKIT_VERSION" -ForegroundColor Green
+    Write-Host "   Enhanced PowerShell Framework" -ForegroundColor Cyan
+    Write-Host "   Location: $OH_MY_XKIT" -ForegroundColor Yellow
+    Write-Host "   Theme: $XKIT_THEME" -ForegroundColor Magenta
+    Write-Host "   Plugins: $($XKIT_PLUGINS -join ', ')" -ForegroundColor Blue
+    Write-Host ""
 }
 
-function xkit-reload { 
-    . $PROFILE
-    Write-Host "Reloaded!" -ForegroundColor Green
+function global:xkit-reload { 
+    Write-Host "[RELOAD] Reloading Oh My XKit..." -ForegroundColor Yellow
+    . "$OH_MY_XKIT\oh-my-xkit.ps1"
 }
 
-function xkit-help {
-    Write-Host "Oh My XKit v$XKIT_VERSION" -ForegroundColor Green
-    Write-Host "Available commands:" -ForegroundColor Cyan
-    Write-Host "  xkit-version  - Show version" -ForegroundColor White
-    Write-Host "  xkit-reload   - Reload profile" -ForegroundColor White  
-    Write-Host "  xkit-help     - Show this help" -ForegroundColor White
-    Write-Host "Git commands: gst, ga, gc, gp, gl, gb, gco" -ForegroundColor Yellow
-    Write-Host "Docker commands: d, dps, di, p, pps, pi" -ForegroundColor Yellow
-    Write-Host "AI command: ai 'question'" -ForegroundColor Yellow
-    Write-Host "Telegram: tg 'message'" -ForegroundColor Yellow
+function global:xkit-help {
+    if (Get-Command "Invoke-XKitPython" -ErrorAction SilentlyContinue) {
+        Invoke-XKitPython "show-help"
+    } else {
+        Write-Host "❌ XKit configuration not loaded properly" -ForegroundColor Red
+        Write-Host "💡 Try reloading your profile: . $PROFILE" -ForegroundColor Yellow
+    }
 }
 
 # Load theme and plugins automatically

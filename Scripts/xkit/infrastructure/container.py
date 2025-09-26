@@ -1,11 +1,79 @@
 """
-Container repository implementation - integrates Podman/Docker functionality
+Container repository implementation - integrates Podman/Docker functionality  
 """
 import subprocess
 from pathlib import Path
 from typing import Optional
+
 from ..domain.interfaces import IContainerRepository
 from ..domain.entities import ContainerInfo
+
+
+class XKitContainer:
+    """Enhanced container for XKit dependency injection"""
+    
+    def __init__(self):
+        # Infrastructure services
+        from .filesystem import FileSystemRepository
+        from .git import GitRepository
+        from .ai_service import GeminiAIService
+        from .telegram_service import TelegramService
+        from .display import ConsoleDisplayService
+        from .project_analyzer import ProjectAnalyzer
+        from .error_handler import ErrorHandler, XPilotAgent
+        from .git_branch_manager import GitBranchManager
+        
+        # Application use cases
+        from ..application.use_cases import (
+            AnalyzeProjectUseCase, ShowWelcomeUseCase, ShowStatusUseCase,
+            AskAISolutionUseCase, ExecuteContainerCommandUseCase,
+            HandleErrorUseCase, ShowErrorDetailsUseCase, RetryLastErrorUseCase
+        )
+        
+        # Initialize infrastructure services
+        self.file_system = FileSystemRepository()
+        self.git_repository = GitRepository()
+        self.container_repository = ContainerRepository()
+        self.ai_service = GeminiAIService()
+        self.telegram_service = TelegramService()
+        self.display_service = ConsoleDisplayService()
+        self.project_analyzer = ProjectAnalyzer(self.file_system)
+        
+        # Initialize error handling services
+        self.error_handler = ErrorHandler()
+        self.xpilot_agent = XPilotAgent(self.error_handler)
+        self.git_branch_manager = GitBranchManager()
+        
+        # Initialize use cases
+        self.analyze_project = AnalyzeProjectUseCase(
+            self.file_system,
+            self.git_repository,
+            self.container_repository,
+            self.project_analyzer
+        )
+        
+        self.show_welcome = ShowWelcomeUseCase(self.display_service)
+        self.show_status = ShowStatusUseCase(self.display_service)
+        self.ask_ai_solution = AskAISolutionUseCase(self.display_service)
+        self.execute_container_command = ExecuteContainerCommandUseCase(self.container_repository)
+        
+        # Error handling use cases
+        self.handle_error = HandleErrorUseCase(
+            self.error_handler,
+            self.display_service,
+            self.git_branch_manager,
+            self.xpilot_agent
+        )
+        
+        self.show_error_details = ShowErrorDetailsUseCase(
+            self.error_handler,
+            self.display_service
+        )
+        
+        self.retry_last_error = RetryLastErrorUseCase(
+            self.handle_error,
+            self.error_handler
+        )
 
 
 class ContainerRepository(IContainerRepository):
