@@ -1,25 +1,39 @@
-# XKit v3.0 - Python-First Approach
-# Minimal PowerShell Profile that delegates everything to Python
+# XKit v3.0 - Standardized Command Structure
+# Minimal PowerShell Profile that loads the new xkit command
 
 # Configure UTF-8 support for emojis FIRST
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = "utf-8"
 
-# Load the ultra-minimal Python-first system
-$XKitPython = "$PSScriptRoot\xkit-minimal-python.ps1"
-if (Test-Path $XKitPython) {
-    Write-Host "🔄 Loading XKit Python-First Architecture..." -ForegroundColor Cyan
-    . $XKitPython
-    Write-Host "✅ All commands now delegate to Python backend!" -ForegroundColor Green
-} else {
-    Write-Host "❌ XKit Python-First system not found!" -ForegroundColor Red
-    Write-Host "💡 Expected: $XKitPython" -ForegroundColor Cyan
+# Load the new standardized xkit command script
+$XKitCommand = "$PSScriptRoot\xkit.ps1"
+if (Test-Path $XKitCommand) {
+    Write-Host "� Loading XKit v3.0 Standardized Command Structure..." -ForegroundColor Cyan
     
-    # Fallback attempt
-    $XKitV3 = "$PSScriptRoot\xkit-v3.ps1"
-    if (Test-Path $XKitV3) {
-        Write-Host "🔄 Trying XKit v3.0..." -ForegroundColor Yellow
-        . $XKitV3
+    # Create global xkit function that calls the script
+    function global:xkit {
+        param(
+            [Parameter(Position=0, Mandatory=$true)]
+            [string]$Command,
+            
+            [Parameter(Position=1, ValueFromRemainingArguments=$true)]
+            [string[]]$Parameters = @()
+        )
+        
+        & "$PSScriptRoot\xkit.ps1" $Command @Parameters
+    }
+    
+    Write-Host "✅ XKit command structure loaded: xkit <command> <params>" -ForegroundColor Green
+    Write-Host "💡 Try: xkit help" -ForegroundColor Yellow
+} else {
+    Write-Host "❌ XKit command script not found!" -ForegroundColor Red
+    Write-Host "💡 Expected: $XKitCommand" -ForegroundColor Cyan
+    
+    # Fallback to Python-first system
+    $XKitPython = "$PSScriptRoot\xkit-minimal-python.ps1"
+    if (Test-Path $XKitPython) {
+        Write-Host "🔄 Loading fallback Python-First system..." -ForegroundColor Yellow
+        . $XKitPython
     }
 }
 
@@ -36,7 +50,7 @@ $env:GITLAB_URL = 'https://localhost'
 # XKit v3.0 Configuration
 $env:XKIT_VERSION = '3.0.0'
 $env:XKIT_ARCHITECTURE = 'hybrid-mcp'
-$env:GEMINI_API_KEY = 'AIzaSyCvzBo-iK-KBdwedZYSHyoHcMzsYqEArC4'
+$env:GEMINI_API_KEY = 'AIzaSyBsjNVK3p544LLk_OL4IChy7OdApkhS7vA'
 $env:TELEGRAM_TOKEN = '8477588651:AAGaQLuk7hsfW5UWiNEnpGWK2Z6rRLg9A-s'
 $env:ADMIN_ID = '7335391186'
 
