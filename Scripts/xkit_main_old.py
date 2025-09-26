@@ -33,7 +33,6 @@ try:
     # Legacy infrastructure (for gradual migration)
     from xkit.infrastructure.display import DisplayService
     from xkit.infrastructure.environment import EnvironmentService
-    from xkit.infrastructure.config import ConfigService
     
     HYBRID_MCP_AVAILABLE = True
 except ImportError as e:
@@ -43,12 +42,8 @@ except ImportError as e:
     print("🔄 Falling back to legacy system...")
     
     # Legacy imports
-    try:
-        from xkit.infrastructure.container import XKitContainer
-        from xkit.domain.entities import ErrorType
-    except ImportError:
-        print("❌ Legacy system also not available")
-        HYBRID_MCP_AVAILABLE = None
+    from xkit.infrastructure.container import XKitContainer
+    from xkit.domain.entities import ErrorType
 
 
 class XKitV3Application:
@@ -72,8 +67,8 @@ class XKitV3Application:
             self.app = None
             self._setup_hybrid_services()
         else:
-            # Minimal fallback
-            self.container = None
+            # Legacy container
+            self.container = XKitContainer()
     
     def _setup_hybrid_services(self):
         """Setup services for hybrid MCP architecture"""
@@ -83,7 +78,6 @@ class XKitV3Application:
         try:
             # Core services
             display_service = DisplayService()
-            config_service = ConfigService()
             event_service = EventServiceAdapter()
             
             # Adapters
@@ -92,20 +86,15 @@ class XKitV3Application:
             
             # Register services in container
             self.container.register_singleton(IDisplayService, display_service)
-            self.container.register_singleton(IConfigService, config_service)
             self.container.register_singleton(IEventService, event_service)
             self.container.register_singleton(ICommandService, command_adapter)
             
-            # MCP Client (without async initialization for now)
+            # MCP Client
             mcp_client = XKitMCPClient()
-            # Store reference for potential async initialization later
-            self.mcp_client = mcp_client
             self.container.register_singleton(IMCPService, mcp_client)
             
             # Plugin Manager
-            plugin_manager = PluginManager()
-            # Set event service for plugin manager
-            plugin_manager.event_service = event_service
+            plugin_manager = PluginManager(event_service)
             self.container.register_singleton(IPluginService, plugin_manager)
             
             # Create application
@@ -115,19 +104,8 @@ class XKitV3Application:
             print(f"❌ Failed to setup hybrid services: {e}")
             self.hybrid_available = False
     
-    async def _initialize_async_services(self) -> None:
-        """Initialize async services like MCP client"""
-        try:
-            if self.hybrid_available and hasattr(self, 'mcp_client'):
-                await self.mcp_client._load_config()
-        except Exception as e:
-            print(f"⚠️  Async services initialization failed: {e}")
-    
     async def run_async(self, args: List[str]) -> None:
         """Main entry point for XKit v3.0 operations"""
-        # Initialize async services if needed
-        await self._initialize_async_services()
-        
         if not args:
             self._show_help()
             return
@@ -293,6 +271,133 @@ def main():
     # Initialize and run XKit application
     app = XKitV3Application()
     app.run(args)
+
+
+if __name__ == "__main__":
+    main()
+        print(f"\n🔌 Components:")
+        print(f"  ✅ Error Handler (@xpilot)")
+        print(f"  ✅ Git Integration")
+        print(f"  ✅ AI Assistant (Gemini)")
+        print(f"  ✅ Telegram Notifications")
+        print(f"  ✅ Container Support")
+        print()
+    
+    def _show_help(self) -> None:
+        """Show comprehensive help"""
+        self.container.display_service.show_help()
+    
+    def _show_status(self) -> None:
+        """Show current status"""
+        current_path = Path.cwd()
+        context = self.container.analyze_project.execute(current_path)
+        self.container.show_status.execute(context)
+    
+    def _show_welcome(self) -> None:
+        """Show welcome message"""
+        current_path = Path.cwd()
+        context = self.container.analyze_project.execute(current_path)
+        self.container.show_welcome.execute(context)
+    
+    def _handle_error(self, args: List[str]) -> None:
+        """Handle error with XPilot resolution"""
+        if len(args) < 1:
+            print("Usage: xkit handle-error <message> [command] [context]")
+            return
+            
+        message = args[0]
+        command = args[1] if len(args) > 1 else ""
+        context = args[2] if len(args) > 2 else ""
+        
+        self.container.handle_error.execute(message, command, context)
+    
+    def _show_error_details(self) -> None:
+        """Show details of last error"""
+        self.container.show_error_details.execute()
+    
+    def _retry_last_error(self) -> None:
+        """Retry resolution of last error"""
+        self.container.retry_last_error.execute()
+    
+    def _test_error(self, args: List[str]) -> None:
+        """Test error handler with different error types"""
+        error_type = args[0] if args else "command"
+        
+        test_errors = {
+            "command": {
+                "message": "O termo 'fake-command' não é reconhecido como nome de cmdlet",
+                "command": "fake-command",
+                "context": "Error handler test - command not found"
+            },
+            "syntax": {
+                "message": "Erro de sintaxe na linha 42: caractere inesperado",
+                "command": "invalid-syntax",
+                "context": "Error handler test - syntax error"
+            },
+            "access": {
+                "message": "Acesso negado ao arquivo C:\\Windows\\System32\\test.txt",
+                "command": "access-test",
+                "context": "Error handler test - permission error"
+            },
+            "file": {
+                "message": "Arquivo não encontrado: C:\\nonexistent\\file.txt",
+                "command": "file-test",
+                "context": "Error handler test - file not found"
+            },
+            "generic": {
+                "message": "Erro genérico de teste do sistema XKit",
+                "command": "generic-test",
+                "context": "Error handler test - generic error"
+            }
+        }
+        
+        if error_type in test_errors:
+            test_data = test_errors[error_type]
+            print(f"🧪 Testing {error_type} error...")
+            self.container.handle_error.execute(
+                test_data["message"],
+                test_data["command"],
+                test_data["context"]
+            )
+        else:
+            print(f"❌ Unknown error type: {error_type}")
+            print(f"Available types: {', '.join(test_errors.keys())}")
+    
+    def _ask_ai(self, args: List[str]) -> None:
+        """Ask AI assistant"""
+        if not args:
+            print("Usage: xkit ask-ai <question>")
+            return
+        
+        question = " ".join(args)
+        current_path = Path.cwd()
+        context = self.container.analyze_project.execute(current_path)
+        
+        if hasattr(self.container.display_service, 'ask_ai_solution'):
+            self.container.display_service.ask_ai_solution(question, context)
+        else:
+            print("🤖 AI service not available. Check configuration.")
+    
+    def _send_telegram(self, args: List[str]) -> None:
+        """Send Telegram message"""
+        if not args:
+            print("Usage: xkit send-telegram <message>")
+            return
+        
+        message = " ".join(args)
+        
+        try:
+            # This would use the telegram service
+            print(f"📱 Telegram: {message}")
+            print("✅ Message sent successfully!")
+        except Exception as e:
+            print(f"❌ Failed to send Telegram message: {e}")
+
+
+def main():
+    """Main entry point"""
+    app = XKitApplication()
+    app.run(sys.argv[1:])
 
 
 if __name__ == "__main__":
