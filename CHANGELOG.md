@@ -1,5 +1,23 @@
 # 📝 Changelog - XKit v2.1
 
+## [2.1.2] - 2025-09-26
+
+### 🐛 Bug Fixes
+- README.md corrigido (conteúdo duplicado/corrompido removido)
+- Documentação reorganizada e limpa
+- Badges de versão atualizadas para v2.1.2
+
+### 📚 Documentation
+- README.md completamente reescrito com estrutura clara
+- Seções de arquitetura e desenvolvimento melhoradas
+- Links e referências organizados
+
+## [2.1.1] - 2025-09-26
+
+### 📚 Documentation  
+- Documentação completa recriada do zero
+- Comandos padronizados documentados
+
 ## [2.1.0] - 2025-09-26
 
 ### 🎯 BREAKING CHANGES
