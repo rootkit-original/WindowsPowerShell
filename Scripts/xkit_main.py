@@ -86,8 +86,12 @@ class XKitV3Application:
             config_service = ConfigService()
             event_service = EventServiceAdapter()
             
+            # AI Service
+            from xkit.infrastructure.ai_service import GeminiAIService
+            ai_service = GeminiAIService()
+            
             # Adapters
-            command_adapter = CommandAdapter(display_service, event_service)
+            command_adapter = CommandAdapter(display_service, event_service, ai_service)
             powershell_adapter = PowerShellAdapter(display_service)
             
             # Register services in container
@@ -95,6 +99,7 @@ class XKitV3Application:
             self.container.register_singleton(IConfigService, config_service)
             self.container.register_singleton(IEventService, event_service)
             self.container.register_singleton(ICommandService, command_adapter)
+            self.container.register_singleton(IAIService, ai_service)
             
             # MCP Client (without async initialization for now)
             mcp_client = XKitMCPClient()
