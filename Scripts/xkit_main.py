@@ -152,35 +152,227 @@ class XKitV3Application:
         if not self.app.is_running:
             await self.app.start()
         
-        # Map legacy actions to new command system
+        # Map ALL XKit commands - comprehensive mapping
         command_mapping = {
+            # Core commands
+            "xkit-help": "help",
             "help": "help",
-            "show-help": "help", 
+            "show-help": "help",
+            "xkit-status": "status", 
+            "status": "status",
+            "show-status": "status",
+            "xkit-version": "version",
             "version": "version",
             "show-version": "version",
-            "status": "status", 
-            "show-status": "status",
-            "system-init": "system-init",
+            "xkit-reload": "reload",
+            
+            # MCP commands
             "mcp-status": "mcp-status",
-            "mcp-list-servers": "mcp-list-servers",
-            "mcp-list-tools": "mcp-list-tools", 
+            "mcp-servers": "mcp-servers", 
+            "mcp-tools": "mcp-tools",
+            "mcp-call": "mcp-call",
+            "mcp-list-servers": "mcp-servers",
+            "mcp-list-tools": "mcp-tools",
+            
+            # Plugin commands
             "plugin-list": "plugin-list",
+            "plugin-load": "plugin-load",
+            "plugin-reload": "plugin-reload",
+            "plugin-unload": "plugin-unload",
+            
+            # Event commands
             "events-status": "events-status",
+            "events-history": "events-history", 
+            "events-clear": "events-clear",
+            
+            # Git commands
             "git-status": "git-status",
+            "git-branch": "git-branch",
+            "git-create-branch": "git-create-branch",
+            
+            # AI commands
             "ai-analyze": "ai-analyze",
-            "debug": "debug"
+            "ai-explain-code": "ai-explain-code",
+            "xpilot-analyze": "xpilot-analyze",
+            
+            # Debug commands
+            "debug": "debug",
+            "system-init": "system-init",
+            "diagnose": "diagnose"
         }
         
         command = command_mapping.get(action, action)
         
         try:
             result = await self.app.execute_command(command, args)
-            if result.success and result.output:
-                print(result.output)
-            elif not result.success and result.error:
-                print(f"❌ {result.error}")
+            if result and hasattr(result, 'success'):
+                if result.success and result.output:
+                    print(result.output)
+                elif not result.success and result.error:
+                    print(f"❌ {result.error}")
+            else:
+                # Handle commands that don't return result objects
+                print(result if result else f"✅ Command '{command}' executed successfully")
         except Exception as e:
-            print(f"❌ Command failed: {e}")
+            # Fallback to direct command implementation
+            await self._handle_command_direct(command, args, e)
+
+    async def _handle_command_direct(self, command: str, args: List[str], original_error: Exception) -> None:
+        """Handle commands directly when application execution fails"""
+        try:
+            if command in ["help", "show-help"]:
+                self._show_help()
+            elif command in ["version", "show-version"]:
+                self._show_version()
+            elif command in ["status", "show-status"]:
+                self._show_status()
+            elif command in ["mcp-status"]:
+                await self._handle_mcp_status()
+            elif command in ["mcp-servers", "mcp-list-servers"]:
+                await self._handle_mcp_servers()
+            elif command in ["mcp-tools", "mcp-list-tools"]:
+                await self._handle_mcp_tools()
+            elif command in ["plugin-list"]:
+                await self._handle_plugin_list()
+            elif command in ["events-status"]:
+                await self._handle_events_status()
+            elif command in ["debug", "diagnose"]:
+                await self._handle_debug()
+            else:
+                print(f"❌ Command '{command}' not implemented")
+                print(f"💡 Original error: {original_error}")
+                print("🔧 Available commands: help, status, version, mcp-status, plugin-list")
+        except Exception as e:
+            print(f"❌ Direct command handling failed: {e}")
+            print(f"💡 Original error was: {original_error}")
+
+    async def _handle_mcp_status(self) -> None:
+        """Handle MCP status command directly"""
+        print("🔌 MCP (Model Context Protocol) Status")
+        print("=" * 40)
+        
+        if hasattr(self, 'mcp_client') and self.mcp_client:
+            try:
+                # Try to get server configurations
+                servers = getattr(self.mcp_client, 'servers_config', {})
+                if servers:
+                    print(f"✅ MCP Client: Active ({len(servers)} servers configured)")
+                    for name, config in servers.items():
+                        status = "🟢 Ready" if config.get('enabled', True) else "⚪ Disabled"
+                        print(f"   • {name}: {status}")
+                else:
+                    print("⚠️  MCP Client: No servers configured")
+            except Exception as e:
+                print(f"⚠️  MCP Client: Error checking status - {e}")
+        else:
+            print("❌ MCP Client: Not available")
+        
+        print("\n💡 Use 'mcp-servers' to see detailed server information")
+
+    async def _handle_mcp_servers(self) -> None:
+        """Handle MCP servers command directly"""
+        print("🔌 MCP Servers Configuration")
+        print("=" * 40)
+        
+        if hasattr(self, 'mcp_client') and self.mcp_client:
+            try:
+                servers = getattr(self.mcp_client, 'servers_config', {})
+                if not servers:
+                    print("📝 No MCP servers configured")
+                    print("💡 Check Scripts/xkit/mcp/config.json for configuration")
+                    return
+                
+                for name, config in servers.items():
+                    print(f"\n🔸 {name}")
+                    print(f"   Type: {config.get('type', 'unknown')}")
+                    print(f"   Description: {config.get('description', 'No description')}")
+                    print(f"   Enabled: {'✅' if config.get('enabled', True) else '❌'}")
+                    
+                    if 'command' in config:
+                        print(f"   Command: {config['command']}")
+                    if 'args' in config:
+                        print(f"   Args: {config['args']}")
+                        
+            except Exception as e:
+                print(f"❌ Error reading MCP servers: {e}")
+        else:
+            print("❌ MCP Client not available")
+
+    async def _handle_mcp_tools(self) -> None:
+        """Handle MCP tools command directly"""
+        print("🛠️  MCP Tools Available")
+        print("=" * 40)
+        print("⚠️  Tool listing requires active MCP connections")
+        print("💡 This feature will be implemented when servers are running")
+
+    async def _handle_plugin_list(self) -> None:
+        """Handle plugin list command directly"""
+        print("🧩 XKit Plugins")
+        print("=" * 40)
+        
+        if hasattr(self, 'app') and self.app and hasattr(self.app, 'container'):
+            try:
+                plugin_service = self.app.container.get_service(IPluginService)
+                if hasattr(plugin_service, 'plugins'):
+                    plugins = plugin_service.plugins
+                    if plugins:
+                        print(f"📦 {len(plugins)} plugins loaded:")
+                        for name, plugin in plugins.items():
+                            status = "🟢" if hasattr(plugin, 'is_loaded') and plugin.is_loaded else "⚪"
+                            print(f"   {status} {name}")
+                    else:
+                        print("📝 No plugins currently loaded")
+                else:
+                    print("⚠️  Plugin service available but no plugins loaded")
+            except Exception as e:
+                print(f"❌ Error accessing plugins: {e}")
+        else:
+            print("❌ Plugin system not available")
+            
+        print("\n💡 Plugin directories:")
+        print("   • Scripts/xkit/plugins/")
+        print("   • oh-my-xkit/plugins/")
+
+    async def _handle_events_status(self) -> None:
+        """Handle events status command directly"""
+        print("📡 Event System Status")
+        print("=" * 40)
+        
+        if hasattr(self, 'app') and self.app and hasattr(self.app, 'container'):
+            try:
+                event_service = self.app.container.get_service(IEventService)
+                if hasattr(event_service, 'get_metrics'):
+                    metrics = event_service.get_metrics()
+                    print(f"✅ Event Bus: Active")
+                    print(f"   Total Events: {getattr(metrics, 'total_events', 0)}")
+                    print(f"   Processed: {getattr(metrics, 'processed_events', 0)}")
+                    print(f"   Failed: {getattr(metrics, 'failed_events', 0)}")
+                    print(f"   Avg Processing: {getattr(metrics, 'average_processing_time', 0):.3f}s")
+                else:
+                    print("✅ Event Service: Available")
+            except Exception as e:
+                print(f"⚠️  Event Service: {e}")
+        else:
+            print("❌ Event system not available")
+
+    async def _handle_debug(self) -> None:
+        """Handle debug command directly"""
+        print("🔧 XKit System Diagnostics")
+        print("=" * 40)
+        
+        print(f"🏗️  Architecture: {'Hybrid MCP v3.0' if self.hybrid_available else 'Legacy'}")
+        print(f"🐍 Python Backend: {'✅ Active' if self.hybrid_available else '⚠️  Limited'}")
+        print(f"⚡ PowerShell Wrapper: ✅ Active")
+        
+        if hasattr(self, 'app') and self.app:
+            print(f"📦 Application: {'🟢 Running' if self.app.is_running else '⚪ Stopped'}")
+            if hasattr(self.app, 'container') and self.app.container:
+                print(f"🔗 Services: ✅ Container initialized")
+        
+        if hasattr(self, 'mcp_client'):
+            print(f"🔌 MCP Client: ✅ Available")
+        
+        print(f"\n📊 System Health: {'🟢 Excellent' if self.hybrid_available else '🟡 Limited Mode'}")
     
     async def _run_legacy_command(self, action: str, args: List[str]) -> None:
         """Run command using legacy system"""

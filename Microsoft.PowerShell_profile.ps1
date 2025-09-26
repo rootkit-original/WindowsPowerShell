@@ -1,26 +1,25 @@
-# XKit v3.0 - Hybrid MCP Architecture PowerShell Profile
-# Ultra-Minimal Profile with Automatic Loading
+# XKit v3.0 - Python-First Approach
+# Minimal PowerShell Profile that delegates everything to Python
 
 # Configure UTF-8 support for emojis FIRST
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = "utf-8"
 
-# Load XKit v3.0 Hybrid MCP Architecture
-$XKitV3 = "$PSScriptRoot\xkit-v3.ps1"
-if (Test-Path $XKitV3) {
-    Write-Host "🔄 Loading XKit v3.0 Hybrid MCP Architecture..." -ForegroundColor Cyan
-    . $XKitV3
-    Write-Host "✅ XKit v3.0 loaded successfully!" -ForegroundColor Green
+# Load the ultra-minimal Python-first system
+$XKitPython = "$PSScriptRoot\xkit-minimal-python.ps1"
+if (Test-Path $XKitPython) {
+    Write-Host "🔄 Loading XKit Python-First Architecture..." -ForegroundColor Cyan
+    . $XKitPython
+    Write-Host "✅ All commands now delegate to Python backend!" -ForegroundColor Green
 } else {
-    # Fallback to legacy system
-    Write-Host "⚠️  XKit v3.0 not found, trying legacy..." -ForegroundColor Yellow
-    $XKitMinimal = "$PSScriptRoot\xkit-minimal.ps1"
-    if (Test-Path $XKitMinimal) {
-        . $XKitMinimal
-        Write-Host "🔄 Running XKit in legacy mode" -ForegroundColor Yellow
-    } else {
-        Write-Host "❌ No XKit system found!" -ForegroundColor Red
-        Write-Host "💡 Expected: $XKitV3" -ForegroundColor Cyan
+    Write-Host "❌ XKit Python-First system not found!" -ForegroundColor Red
+    Write-Host "💡 Expected: $XKitPython" -ForegroundColor Cyan
+    
+    # Fallback attempt
+    $XKitV3 = "$PSScriptRoot\xkit-v3.ps1"
+    if (Test-Path $XKitV3) {
+        Write-Host "🔄 Trying XKit v3.0..." -ForegroundColor Yellow
+        . $XKitV3
     }
 }
 

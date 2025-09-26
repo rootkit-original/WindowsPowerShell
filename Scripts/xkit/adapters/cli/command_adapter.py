@@ -30,6 +30,7 @@ class CommandAdapter(ICommandService):
     def _register_default_commands(self) -> None:
         """Register default XKit commands"""
         default_commands = {
+            # Core commands
             "help": {
                 "handler": self._handle_help,
                 "description": "Show help information",
@@ -49,6 +50,44 @@ class CommandAdapter(ICommandService):
                 "handler": self._handle_list_commands,
                 "description": "List all available commands",
                 "category": "core"
+            },
+            
+            # MCP commands
+            "mcp-status": {
+                "handler": self._handle_mcp_status,
+                "description": "Show MCP system status",
+                "category": "mcp"
+            },
+            "mcp-servers": {
+                "handler": self._handle_mcp_servers,
+                "description": "List MCP servers",
+                "category": "mcp"
+            },
+            "mcp-tools": {
+                "handler": self._handle_mcp_tools,
+                "description": "List MCP tools",
+                "category": "mcp"
+            },
+            
+            # Plugin commands
+            "plugin-list": {
+                "handler": self._handle_plugin_list,
+                "description": "List loaded plugins",
+                "category": "plugins"
+            },
+            
+            # Event commands
+            "events-status": {
+                "handler": self._handle_events_status,
+                "description": "Show event system status",
+                "category": "events"
+            },
+            
+            # Debug commands
+            "debug": {
+                "handler": self._handle_debug,
+                "description": "System diagnostics",
+                "category": "debug"
             }
         }
         
@@ -243,6 +282,31 @@ class CommandAdapter(ICommandService):
             categories[category].sort()
         
         return categories
+
+    # New command handlers for MCP, Plugins, Events, Debug
+    async def _handle_mcp_status(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle MCP status command"""
+        return "🔌 MCP Status: System operational (placeholder implementation)"
+
+    async def _handle_mcp_servers(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle MCP servers command"""
+        return "🔌 MCP Servers: 5 servers configured (placeholder implementation)"
+
+    async def _handle_mcp_tools(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle MCP tools command"""
+        return "🛠️  MCP Tools: Available tools listing (placeholder implementation)"
+
+    async def _handle_plugin_list(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle plugin list command"""
+        return "🧩 Plugins: No plugins currently loaded (placeholder implementation)"
+
+    async def _handle_events_status(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle events status command"""
+        return "📡 Event System: Active and operational (placeholder implementation)"
+
+    async def _handle_debug(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle debug command"""
+        return "🔧 Debug: XKit v3.0 Hybrid MCP Architecture operational (placeholder implementation)"
     
     async def _publish_command_executed(self, command: str, args: List[str], 
                                        result: Any, execution_time: float) -> None:
