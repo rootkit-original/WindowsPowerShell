@@ -905,6 +905,9 @@ Desenvolvido com ❤️ para desenvolvedores"""
             # === ANÁLISE GIT AVANÇADA ===
             git_info = await self._analyze_git_status(path)
             
+            # === ANÁLISE GITHUB (ISSUES/PRs) ===
+            github_info = await self._analyze_github_status(path)
+            
             # === CALCULAR SCORE INTELIGENTE ===
             score = await self._calculate_project_score(
                 source_files, doc_files, config_files, test_files, git_info, frameworks
@@ -914,7 +917,7 @@ Desenvolvido com ❤️ para desenvolvedores"""
             return await self._format_enhanced_report(
                 path, score, total_files, source_files, doc_files, 
                 config_files, test_files, technologies, frameworks, 
-                config_analysis, git_info
+                config_analysis, git_info, github_info
             )
             
         except Exception as e:
@@ -1024,6 +1027,7 @@ Desenvolvido com ❤️ para desenvolvedores"""
             'behind': 0,
             'remote_status': 'unknown',
             'last_commit': None,
+            'recent_commits': [],
             'status_details': []
         }
         
@@ -1082,12 +1086,14 @@ Desenvolvido com ❤️ para desenvolvedores"""
             except:
                 pass
             
-            # Último commit
+            # Últimos 3 commits
             try:
-                result = subprocess.run(['git', 'log', '--oneline', '-1'], 
+                result = subprocess.run(['git', 'log', '--oneline', '-3'], 
                                       capture_output=True, text=True, cwd=path, timeout=5)
                 if result.returncode == 0 and result.stdout.strip():
-                    git_info['last_commit'] = result.stdout.strip()[:50]  # Limitar para Telegram
+                    commits = result.stdout.strip().split('\n')
+                    git_info['recent_commits'] = [commit[:60] for commit in commits]  # Limitar para Telegram
+                    git_info['last_commit'] = commits[0][:50] if commits else None
             except:
                 pass
                 
@@ -1095,6 +1101,79 @@ Desenvolvido com ❤️ para desenvolvedores"""
             pass
         
         return git_info
+    
+    async def _analyze_github_status(self, path: Path) -> dict:
+        """Análise de GitHub usando GitHub CLI"""
+        github_info = {
+            'has_gh_cli': False,
+            'is_github_repo': False,
+            'open_issues': [],
+            'open_prs': [],
+            'repo_info': None,
+            'issues_count': 0,
+            'prs_count': 0
+        }
+        
+        try:
+            # Verificar se gh CLI está disponível
+            result = subprocess.run(['gh', '--version'], 
+                                  capture_output=True, text=True, timeout=3)
+            if result.returncode == 0:
+                github_info['has_gh_cli'] = True
+            else:
+                return github_info
+                
+        except Exception:
+            return github_info
+        
+        try:
+            # Verificar se é repositório GitHub
+            result = subprocess.run(['gh', 'repo', 'view', '--json', 'name,owner'], 
+                                  capture_output=True, text=True, cwd=path, timeout=5)
+            
+            if result.returncode == 0:
+                import json
+                repo_data = json.loads(result.stdout)
+                github_info['is_github_repo'] = True
+                github_info['repo_info'] = f"{repo_data.get('owner', {}).get('login', 'unknown')}/{repo_data.get('name', 'unknown')}"
+                
+                # Listar issues abertas (máximo 5 para Telegram)
+                try:
+                    result = subprocess.run(['gh', 'issue', 'list', '--limit', '5', '--json', 'number,title,labels'], 
+                                          capture_output=True, text=True, cwd=path, timeout=5)
+                    if result.returncode == 0:
+                        issues_data = json.loads(result.stdout)
+                        github_info['issues_count'] = len(issues_data)
+                        for issue in issues_data[:3]:  # Máximo 3 para exibir
+                            labels = [label['name'] for label in issue.get('labels', [])]
+                            github_info['open_issues'].append({
+                                'number': issue['number'],
+                                'title': issue['title'][:40],  # Limitar título
+                                'labels': labels[:2]  # Máximo 2 labels
+                            })
+                except:
+                    pass
+                
+                # Listar PRs abertos (máximo 3)
+                try:
+                    result = subprocess.run(['gh', 'pr', 'list', '--limit', '3', '--json', 'number,title,headRefName'], 
+                                          capture_output=True, text=True, cwd=path, timeout=5)
+                    if result.returncode == 0:
+                        prs_data = json.loads(result.stdout)
+                        github_info['prs_count'] = len(prs_data)
+                        for pr in prs_data:
+                            github_info['open_prs'].append({
+                                'number': pr['number'],
+                                'title': pr['title'][:40],
+                                'branch': pr['headRefName']
+                            })
+                except:
+                    pass
+                    
+        except Exception:
+            pass
+        
+        return github_info
     
     async def _calculate_project_score(self, source_files, doc_files, config_files, test_files, git_info, frameworks):
         """Calcula score inteligente do projeto"""
@@ -1124,7 +1203,7 @@ Desenvolvido com ❤️ para desenvolvedores"""
     
     async def _format_enhanced_report(self, path, score, total_files, source_files, doc_files, 
                                     config_files, test_files, technologies, frameworks, 
-                                    config_analysis, git_info):
+                                    config_analysis, git_info, github_info):
         """Formatar relatório avançado para Telegram"""
         
         # Emoji baseado no score
@@ -1187,6 +1266,50 @@ Desenvolvido com ❤️ para desenvolvedores"""
             report.extend([
                 "❌ **Git não inicializado**",
                 "_Considere: `git init`_",
+                ""
+            ])
+        
+        # === ÚLTIMOS 3 COMMITS ===
+        if git_info['has_git'] and git_info['recent_commits']:
+            report.append("📚 **Últimos commits:**")
+            for i, commit in enumerate(git_info['recent_commits'][:3]):
+                emoji = "📌" if i == 0 else "📋"
+                report.append(f"`{emoji} {commit}`")
+            report.append("")
+        
+        # === SEÇÃO GITHUB ===
+        if github_info['is_github_repo']:
+            report.append(f"🐙 **GitHub: {github_info['repo_info']}**")
+            
+            # Issues abertas
+            if github_info['open_issues']:
+                report.append(f"🔥 **Issues abertas ({github_info['issues_count']}):**")
+                for issue in github_info['open_issues']:
+                    labels_str = f" `{', '.join(issue['labels'])}`" if issue['labels'] else ""
+                    report.append(f"• #{issue['number']} {issue['title']}{labels_str}")
+                
+                if github_info['issues_count'] > len(github_info['open_issues']):
+                    remaining = github_info['issues_count'] - len(github_info['open_issues'])
+                    report.append(f"_... e mais {remaining} issues_")
+                report.append("")
+            
+            # PRs abertos
+            if github_info['open_prs']:
+                report.append(f"🔄 **Pull Requests ({github_info['prs_count']}):**")
+                for pr in github_info['open_prs']:
+                    report.append(f"• #{pr['number']} {pr['title']} `{pr['branch']}`")
+                report.append("")
+            
+            # Status geral
+            if not github_info['open_issues'] and not github_info['open_prs']:
+                report.extend([
+                    "✅ **Nenhuma issue ou PR aberta**",
+                    ""
+                ])
+        elif github_info['has_gh_cli'] and git_info['has_git']:
+            report.extend([
+                "📱 **GitHub CLI disponível**",
+                "_Use `gh repo create` para conectar ao GitHub_",
                 ""
             ])
         
