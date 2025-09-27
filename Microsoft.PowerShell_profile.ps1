@@ -3,21 +3,13 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = "utf-8"
 
-# Load Python integration first
-$XKitPython = "$PSScriptRoot\xkit-minimal-python.ps1"
-if (Test-Path $XKitPython) {
-    Write-Host "Loading XKit Python..." -ForegroundColor Cyan
-    . $XKitPython
-    Write-Host "XKit Python loaded!" -ForegroundColor Green
-}
-
-# Load legacy commands compatibility layer
-$LegacyCommands = "$PSScriptRoot\xkit-legacy-commands.ps1"
-if (Test-Path $LegacyCommands) {
-    . $LegacyCommands
-    Write-Host "Legacy commands loaded (gs, ga, gc, d, dc, etc.)" -ForegroundColor Green
+# Load XKit v3.0 core system
+$XKitScript = "$PSScriptRoot\xkit.ps1"
+if (Test-Path $XKitScript) {
+    Write-Host "XKit v3.0 Profile Loaded" -ForegroundColor Green
+    Write-Host "Use: xkit help" -ForegroundColor Cyan
 } else {
-    Write-Host "Legacy commands not found" -ForegroundColor Yellow
+    Write-Host "XKit core not found: $XKitScript" -ForegroundColor Red
 }
 
 # Oh-My-XKit style prompt function

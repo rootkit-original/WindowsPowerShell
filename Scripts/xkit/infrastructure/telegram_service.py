@@ -23,6 +23,19 @@ class TelegramService:
         """Verifica se o serviço está disponível"""
         return bool(self.token and self.admin_id)
     
+    def get_bot_info(self) -> Optional[Dict[str, Any]]:
+        """Obtém informações do bot para verificar se está online"""
+        if not self.token:
+            return None
+            
+        try:
+            response = requests.get(f"{self.base_url}/getMe", timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception:
+            return None
+    
     def send_anomaly_alert(self, anomalies: Dict[str, Any], project_name: str) -> bool:
         """Envia alerta de anomalias"""
         if not self.is_available() or not anomalies:
@@ -111,3 +124,21 @@ class TelegramService:
             
         except Exception:
             return False
+    
+    def get_bot_info(self) -> Optional[Dict[str, Any]]:
+        """Obtém informações do bot"""
+        try:
+            if not self.base_url:
+                return None
+                
+            response = requests.get(
+                f"{self.base_url}/getMe",
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                return response.json().get('result', {})
+            return None
+            
+        except Exception:
+            return None

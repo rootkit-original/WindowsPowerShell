@@ -132,3 +132,19 @@ class XKitContainer:
             "factory_count": len(self._factories),
             "services": self.list_services()
         }
+
+
+# Global container instance for backward compatibility
+# This will be initialized by the main application
+container: Optional[XKitContainer] = None
+
+
+def set_global_container(container_instance: XKitContainer) -> None:
+    """Set the global container instance"""
+    global container
+    container = container_instance
+
+
+def get_global_container() -> Optional[XKitContainer]:
+    """Get the global container instance"""
+    return container

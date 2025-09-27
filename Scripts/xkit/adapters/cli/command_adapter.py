@@ -108,6 +108,23 @@ class CommandAdapter(ICommandService):
                 "handler": self._handle_ai_suggest,
                 "description": "AI improvement suggestions",
                 "category": "ai"
+            },
+            
+            # Project Analysis commands - UNIFIED SMART ANALYSIS
+            "analyze-project": {
+                "handler": self._handle_smart_project_analysis,
+                "description": "🤖 Smart project analysis with AI (detects .xkit projects)",
+                "category": "project"
+            },
+            "project-score": {
+                "handler": self._handle_project_score,
+                "description": "Get project quality score (legacy - use analyze-project)",
+                "category": "project"
+            },
+            "scan-xkit-projects": {
+                "handler": self._handle_scan_projects,
+                "description": "Scan for .xkit projects (legacy - use analyze-project)",
+                "category": "project"
             }
         }
         
@@ -526,7 +543,49 @@ class CommandAdapter(ICommandService):
 
     async def _handle_plugin_list(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle plugin list command"""
-        return "🧩 Plugins: No plugins currently loaded (placeholder implementation)"
+        try:
+            # Get plugin manager from container
+            from xkit.plugins.manager import PluginManager
+            from xkit.core.container import get_global_container
+            from xkit.core.ports import IPluginService
+            
+            container = get_global_container()
+            if not container:
+                return "❌ Container not available"
+                
+            plugin_manager = container.get_service(IPluginService)
+            if not plugin_manager:
+                return "❌ Plugin Manager not available"
+            
+            # Get loaded plugins
+            loaded_plugins = plugin_manager.loaded_plugins
+            
+            if not loaded_plugins:
+                return "📦 No plugins currently loaded\\n💡 Plugins will auto-load when needed"
+            
+            result = ["🧩 Loaded Plugins:", "=" * 20]
+            
+            for plugin_name, plugin in loaded_plugins.items():
+                status_emoji = {
+                    "active": "🟢",
+                    "loaded": "🔵", 
+                    "loading": "🟡",
+                    "error": "🔴",
+                    "unloaded": "⚫"
+                }.get(plugin.status.value if hasattr(plugin, 'status') else 'unknown', "❓")
+                
+                name = plugin.name if hasattr(plugin, 'name') else plugin_name
+                version = plugin.version if hasattr(plugin, 'version') else 'unknown'
+                description = plugin.description if hasattr(plugin, 'description') else 'No description'
+                
+                result.append(f"  {status_emoji} {name} v{version}")
+                result.append(f"    {description}")
+                result.append("")
+            
+            return "\\n".join(result)
+            
+        except Exception as e:
+            return f"❌ Error listing plugins: {str(e)}"
 
     async def _handle_events_status(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle events status command"""
@@ -739,3 +798,109 @@ Configure GEMINI_API_KEY to enable AI suggestions."""
                 
         except Exception as e:
             return f"❌ AI Service Error: {str(e)}"
+    
+    # Project Analysis Handlers - SMART AI ANALYSIS
+    async def _handle_smart_project_analysis(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle smart project analysis with AI"""
+        try:
+            from ...application.use_cases import AnalyzeXKitProjectUseCase
+            
+            path = args[0] if args else None
+            use_case = AnalyzeXKitProjectUseCase(self.display_service)
+            
+            # Capture all output for return
+            import io
+            import sys
+            from contextlib import redirect_stdout, redirect_stderr
+            
+            output = io.StringIO()
+            error = io.StringIO()
+            
+            with redirect_stdout(output), redirect_stderr(error):
+                await use_case.execute(path)
+            
+            result = output.getvalue()
+            error_output = error.getvalue()
+            
+            if error_output:
+                result += f"\n⚠️  Warnings: {error_output}"
+            
+            return result.strip() or "✅ Análise inteligente concluída"
+            
+        except Exception as e:
+            return f"❌ Erro na análise inteligente: {str(e)}\n💡 Certifique-se de que está em um diretório com .xkit"
+    
+    async def _handle_analyze_project(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Legacy handler - redirects to smart analysis"""
+        return await self._handle_smart_project_analysis(args, context)
+    
+    async def _handle_scan_projects(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle scan-xkit-projects command"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            base_path = Path(path)
+            
+            result = [f"🔍 Procurando projetos .xkit em: {base_path}"]
+            
+            xkit_projects = []
+            for root, dirs, files in os.walk(base_path):
+                if '.xkit' in files:
+                    xkit_projects.append(root)
+                    dirs.clear()
+            
+            if not xkit_projects:
+                result.append("⚠️  Nenhum projeto .xkit encontrado")
+                return "\n".join(result)
+                
+            result.append(f"📁 Encontrados {len(xkit_projects)} projetos .xkit:")
+            for project in xkit_projects:
+                project_name = os.path.basename(project)
+                result.append(f"  📂 {project_name}")
+            
+            return "\n".join(result)
+            
+        except Exception as e:
+            return f"❌ Erro no scan: {str(e)}"
+    
+    async def _handle_project_score(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle project-score command"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            project_path = Path(path)
+            
+            if not (project_path / '.xkit').exists():
+                return "❌ Este não é um projeto .xkit"
+            
+            # Cálculo básico de score
+            score = 0
+            files = list(project_path.rglob("*"))
+            
+            # Git (+3)
+            if (project_path / '.git').exists():
+                score += 3
+            
+            # README (+2)
+            readme_files = [f for f in files if f.name.upper().startswith('README')]
+            if readme_files:
+                score += 2
+                
+            # Código fonte (+3)
+            code_files = [f for f in files if f.suffix in ['.py', '.js', '.ts', '.ps1']]
+            if code_files:
+                score += 3
+                
+            # Estrutura (+2)
+            if len(files) > 5:
+                score += 2
+            
+            color_emoji = "🟢" if score >= 7 else "🟡" if score >= 4 else "🔴"
+            return f"{color_emoji} Pontuação do Projeto: {score}/10"
+            
+        except Exception as e:
+            return f"❌ Erro no cálculo: {str(e)}"

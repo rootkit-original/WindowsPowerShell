@@ -4,7 +4,9 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = "utf-8"
 
-# Carregar profile principal do XKit
+# Carregar pro        
+        $global:XKitLoaded = $true
+        Write-Host "✅ XKit AutoStart loaded!" -ForegroundColor Green do XKit
 $ProfilePath = "$env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
 if (Test-Path $ProfilePath) {
     try {

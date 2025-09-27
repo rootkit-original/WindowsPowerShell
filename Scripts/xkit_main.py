@@ -20,7 +20,6 @@ if sys.platform == "win32":
 # Add the xkit module to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Import new hybrid architecture components
 try:
     from xkit.core import XKitApplication, XKitContainer
     from xkit.core.application import ApplicationConfig
@@ -30,25 +29,16 @@ try:
     from xkit.mcp.client import XKitMCPClient
     from xkit.plugins.manager import PluginManager
     
-    # Legacy infrastructure (for gradual migration)
+    # Infrastructure services
     from xkit.infrastructure.display import DisplayService
     from xkit.infrastructure.environment import EnvironmentService
     from xkit.infrastructure.config import ConfigService
     
     HYBRID_MCP_AVAILABLE = True
 except ImportError as e:
-    # Fallback to legacy system if hybrid architecture not available
-    HYBRID_MCP_AVAILABLE = False
-    print(f"⚠️  Hybrid MCP Architecture not available: {e}")
-    print("🔄 Falling back to legacy system...")
-    
-    # Legacy imports
-    try:
-        from xkit.infrastructure.container import XKitContainer
-        from xkit.domain.entities import ErrorType
-    except ImportError:
-        print("❌ Legacy system also not available")
-        HYBRID_MCP_AVAILABLE = None
+    print(f"❌ XKit hybrid architecture not available: {e}")
+    print("� Check Python dependencies and installation")
+    sys.exit(1)
 
 
 class XKitV3Application:
@@ -111,10 +101,16 @@ class XKitV3Application:
             plugin_manager = PluginManager()
             # Set event service for plugin manager
             plugin_manager.event_service = event_service
+            # Set command service for plugin command registration
+            plugin_manager.set_command_service(command_adapter)
             self.container.register_singleton(IPluginService, plugin_manager)
             
             # Create application
             self.app = XKitApplication(self.config, self.container)
+            
+            # Set global container for backward compatibility
+            from xkit.core.container import set_global_container
+            set_global_container(self.container)
             
         except Exception as e:
             print(f"❌ Failed to setup hybrid services: {e}")
@@ -190,6 +186,12 @@ class XKitV3Application:
             # Debug commands (xkit debug <subcommand>)
             "debug": "debug",
             
+            # Project Analysis commands (xkit project <subcommand>)
+            "project": "analyze-project",  # Default project action
+            "analyze-project": "analyze-project",
+            "scan-xkit-projects": "scan-xkit-projects",
+            "project-score": "project-score",
+            
             # Legacy compatibility (remove xkit- prefix if present)
             "xkit-help": "help",
             "xkit-status": "status", 
@@ -202,7 +204,7 @@ class XKitV3Application:
         }
         
         # Handle subcommands for structured commands
-        if command in ["mcp", "plugin", "events", "git", "ai", "debug"] and params:
+        if command in ["mcp", "plugin", "events", "git", "ai", "debug", "project"] and params:
             subcommand = params[0].lower()
             remaining_params = params[1:] if len(params) > 1 else []
             
@@ -242,6 +244,11 @@ class XKitV3Application:
                     "mcp": "debug-mcp",
                     "plugins": "debug-plugins",
                     "events": "debug-events"
+                },
+                "project": {
+                    "analyze": "analyze-project",
+                    "scan": "scan-xkit-projects", 
+                    "score": "project-score"
                 }
             }
             
@@ -292,10 +299,16 @@ class XKitV3Application:
                 await self._handle_events_status()
             elif command in ["debug", "diagnose"]:
                 await self._handle_debug()
+            elif command in ["analyze-project"]:
+                await self._handle_analyze_project(args)
+            elif command in ["scan-xkit-projects"]:
+                await self._handle_scan_xkit_projects(args)
+            elif command in ["project-score"]:
+                await self._handle_project_score(args)
             else:
                 print(f"❌ Command '{command}' not implemented")
                 print(f"💡 Original error: {original_error}")
-                print("🔧 Available commands: help, status, version, mcp-status, plugin-list")
+                print("🔧 Available commands: help, status, version, mcp-status, plugin-list, analyze-project")
         except Exception as e:
             print(f"❌ Direct command handling failed: {e}")
             print(f"💡 Original error was: {original_error}")
@@ -428,19 +441,94 @@ class XKitV3Application:
         
         print(f"\n📊 System Health: {'🟢 Excellent' if self.hybrid_available else '🟡 Limited Mode'}")
     
-    async def _run_legacy_command(self, action: str, args: List[str]) -> None:
-        """Run command using legacy system"""
-        if action in ["help", "show-help"]:
-            self._show_help()
-        elif action in ["version", "show-version"]:
-            self._show_version()
-        elif action in ["status", "show-status"]:
-            self._show_status()
-        elif action == "system-init":
-            print("🚀 XKit v3.0 System Initialized (Legacy Mode)")
-        else:
-            print(f"❌ Unknown action: {action}")
-            self._show_help()
+    async def _handle_analyze_project(self, args: List[str]) -> None:
+        """Handle analyze-project command directly"""
+        try:
+            from xkit.application.use_cases import AnalyzeXKitProjectUseCase
+            from xkit.infrastructure.display import DisplayService
+            
+            display_service = DisplayService()
+            use_case = AnalyzeXKitProjectUseCase(display_service)
+            
+            path = args[0] if args else None
+            await use_case.execute(path)
+            
+        except Exception as e:
+            print(f"❌ Erro na análise: {e}")
+            print("💡 Certifique-se de que está em um diretório válido")
+    
+    async def _handle_scan_xkit_projects(self, args: List[str]) -> None:
+        """Handle scan-xkit-projects command directly"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            base_path = Path(path)
+            
+            print(f"🔍 Procurando projetos .xkit em: {base_path}")
+            
+            xkit_projects = []
+            for root, dirs, files in os.walk(base_path):
+                if '.xkit' in files:
+                    xkit_projects.append(root)
+                    dirs.clear()  # Don't scan subdirectories of .xkit projects
+            
+            if not xkit_projects:
+                print("⚠️  Nenhum projeto .xkit encontrado")
+                return
+                
+            print(f"� Encontrados {len(xkit_projects)} projetos .xkit:")
+            for project in xkit_projects:
+                project_name = os.path.basename(project)
+                print(f"  📂 {project_name}")
+            
+        except Exception as e:
+            print(f"❌ Erro no scan: {e}")
+    
+    async def _handle_project_score(self, args: List[str]) -> None:
+        """Handle project-score command directly"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            project_path = Path(path)
+            
+            # Verifica se é projeto .xkit
+            if not (project_path / '.xkit').exists():
+                print("❌ Este não é um projeto .xkit")
+                return
+            
+            # Cálculo básico de score
+            score = 0
+            files = list(project_path.rglob("*"))
+            
+            # Git (+3)
+            if (project_path / '.git').exists():
+                score += 3
+            
+            # README (+2)
+            readme_files = [f for f in files if f.name.upper().startswith('README')]
+            if readme_files:
+                score += 2
+                
+            # Código fonte (+3)
+            code_files = [f for f in files if f.suffix in ['.py', '.js', '.ts', '.ps1']]
+            if code_files:
+                score += 3
+                
+            # Estrutura (+2)
+            if len(files) > 5:
+                score += 2
+            
+            color_emoji = "🟢" if score >= 7 else "🟡" if score >= 4 else "🔴"
+            print(f"{color_emoji} Pontuação do Projeto: {score}/10")
+            
+        except Exception as e:
+            print(f"❌ Erro no cálculo: {e}")
+    
+
     
     def _show_help(self) -> None:
         """Show XKit help information"""
@@ -472,7 +560,12 @@ class XKitV3Application:
             print("  ai-explain-code - Explain code functionality")
             print("  xpilot-analyze  - @xpilot error analysis")
             print()
-            print("💡 Core Commands:")
+            print("� Project Analysis:")
+            print("  analyze-project - Analyze .xkit project quality")
+            print("  scan-xkit-projects - Scan for .xkit projects")
+            print("  project-score   - Get project quality score")
+            print()
+            print("�💡 Core Commands:")
             print("  help            - Show this help")
             print("  version         - Show version info")
             print("  status          - Show system status")
@@ -489,17 +582,13 @@ class XKitV3Application:
     
     def _show_version(self) -> None:
         """Show version information"""
-        if self.hybrid_available:
-            print("🚀 XKit v3.0.0")
-            print("🏗️  Architecture: Hybrid MCP")
-            print("🔗 MCP Protocol: Active")
-            print("🧩 Plugin System: Available") 
-            print("📡 Event Bus: Active")
-            print("🐍 Python Backend: Active")
-            print("⚡ PowerShell Wrapper: Minimal")
-        else:
-            print("🚀 XKit v3.0.0 (Legacy Mode)")
-            print("⚠️  Hybrid MCP Architecture: Not Available")
+        print("🚀 XKit v3.0.0")
+        print("🏗️  Architecture: Hybrid MCP")
+        print("🔗 MCP Protocol: Active")
+        print("🧩 Plugin System: Available") 
+        print("📡 Event Bus: Active")
+        print("🐍 Python Backend: Active")
+        print("⚡ PowerShell Wrapper: Minimal")
     
     def _show_status(self) -> None:
         """Show system status"""
@@ -586,6 +675,15 @@ class XKitV3Application:
                     ("xkit debug system", "Detailed system health check"),
                     ("xkit debug mcp", "Debug MCP connections and servers"),
                     ("xkit debug plugins", "Debug plugin loading and status")
+                ]
+            },
+            "project": {
+                "description": "Project analysis commands for .xkit projects",
+                "examples": [
+                    ("xkit project analyze", "Analyze current .xkit project quality"),
+                    ("xkit project analyze /path/to/project", "Analyze specific project"),
+                    ("xkit project scan", "Scan for all .xkit projects in directory"),
+                    ("xkit project score", "Get quality score of current project")
                 ]
             }
         }

@@ -1,0 +1,42 @@
+{
+  "name": "project-analyzer",
+  "version": "1.0.0", 
+  "description": "Plugin de análise avançada de projetos",
+  "main": "plugin.py",
+  "class": "ProjectAnalyzerPlugin",
+  "author": "XKit Team",
+  "dependencies": {
+    "pathlib": "*",
+    "dataclasses": "*",
+    "enum": "*"
+  },
+  "mcp_server": false,
+  "configuration": {
+    "analysis_depth": {
+      "type": "string",
+      "enum": ["basic", "advanced", "professional"],
+      "default": "advanced",
+      "description": "Nível de profundidade da análise"
+    },
+    "include_git_analysis": {
+      "type": "boolean",
+      "default": true,
+      "description": "Incluir análise do repositório Git"
+    },
+    "ai_enhanced": {
+      "type": "boolean", 
+      "default": true,
+      "description": "Usar IA para análises mais profundas"
+    }
+  },
+  "supported_project_types": [
+    "python",
+    "nodejs", 
+    "rust",
+    "go",
+    "java",
+    "csharp",
+    "typescript",
+    "javascript"
+  ]
+}
