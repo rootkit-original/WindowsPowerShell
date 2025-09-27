@@ -546,9 +546,14 @@ class CommandAdapter(ICommandService):
         try:
             # Get plugin manager from container
             from xkit.plugins.manager import PluginManager
-            from xkit.core.container import container
+            from xkit.core.container import get_global_container
+            from xkit.core.ports import IPluginService
             
-            plugin_manager = container.get(PluginManager)
+            container = get_global_container()
+            if not container:
+                return "❌ Container not available"
+                
+            plugin_manager = container.get_service(IPluginService)
             if not plugin_manager:
                 return "❌ Plugin Manager not available"
             

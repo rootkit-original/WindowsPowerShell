@@ -6,12 +6,12 @@ import asyncio
 from typing import Dict, Any, List, Optional, Callable
 from pathlib import Path
 
-from .base import XKitCorePlugin
-from ..infrastructure.telegram_service import TelegramService
-from ..infrastructure.config import XKitConfigService
-from ..core.ports.event_port import IEventService
-from ..domain.entities import ProjectInfo, DevelopmentContext
-from ..mcp.client import XKitMCPClient
+from xkit.plugins.base import XKitCorePlugin
+from xkit.infrastructure.telegram_service import TelegramService
+from xkit.infrastructure.config import XKitConfigService
+from xkit.core.ports.event_port import IEventService
+from xkit.domain.entities import ProjectInfo, DevelopmentContext
+from xkit.mcp.client import XKitMCPClient
 
 
 class TelegramPlugin(XKitCorePlugin):

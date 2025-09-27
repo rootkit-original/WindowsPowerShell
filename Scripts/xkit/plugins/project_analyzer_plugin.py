@@ -10,9 +10,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
-from .base import XKitCorePlugin
-from ..infrastructure.ai_service import GeminiAIService
-from ..infrastructure.display import DisplayService
+from xkit.plugins.base import XKitCorePlugin
+from xkit.infrastructure.ai_service import GeminiAIService
+from xkit.infrastructure.display import DisplayService
 
 
 class ProjectType(Enum):

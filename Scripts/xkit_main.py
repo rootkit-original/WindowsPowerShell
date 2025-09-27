@@ -108,6 +108,10 @@ class XKitV3Application:
             # Create application
             self.app = XKitApplication(self.config, self.container)
             
+            # Set global container for backward compatibility
+            from xkit.core.container import set_global_container
+            set_global_container(self.container)
+            
         except Exception as e:
             print(f"❌ Failed to setup hybrid services: {e}")
             self.hybrid_available = False
