@@ -111,3 +111,21 @@ class TelegramService:
             
         except Exception:
             return False
+    
+    def get_bot_info(self) -> Optional[Dict[str, Any]]:
+        """Obtém informações do bot"""
+        try:
+            if not self.base_url:
+                return None
+                
+            response = requests.get(
+                f"{self.base_url}/getMe",
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                return response.json().get('result', {})
+            return None
+            
+        except Exception:
+            return None

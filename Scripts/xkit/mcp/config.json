@@ -30,12 +30,18 @@
       "description": "Container management via MCP",
       "enabled": false
     },
-    "xkit-telegram": {
+    "telegram-bot": {
       "type": "internal",
       "module": "xkit.mcp.servers.telegram_server",
-      "class": "XKitTelegramServer",
-      "description": "Telegram notifications via MCP", 
-      "enabled": false
+      "class": "TelegramMCPServer",
+      "description": "Full Telegram Bot integration via MCP with project analysis and system control", 
+      "enabled": true,
+      "config": {
+        "requires_telegram_config": true,
+        "supports_webhooks": true,
+        "command_prefix": "/",
+        "admin_only": true
+      }
     }
   },
   "connection_pool": {

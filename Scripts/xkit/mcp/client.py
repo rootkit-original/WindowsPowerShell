@@ -206,6 +206,11 @@ class XKitMCPClient(MCPClient):
         server_instance = connection["instance"]
         return await server_instance.handle_request(request)
     
+    async def list_servers(self) -> Dict[str, Dict[str, Any]]:
+        """List all configured MCP servers"""
+        await self._ensure_config_loaded()
+        return self.servers_config.copy()
+
     async def list_all_tools(self) -> Dict[str, List[Tool]]:
         """List tools from all configured servers"""
         all_tools = {}

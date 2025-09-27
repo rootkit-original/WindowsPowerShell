@@ -150,6 +150,21 @@ class XKitCorePlugin(XKitPlugin):
         )
         super().__init__(metadata)
     
+    @property
+    def name(self) -> str:
+        """Convenience property for plugin name"""
+        return self.metadata.name
+        
+    @property  
+    def version(self) -> str:
+        """Convenience property for plugin version"""
+        return self.metadata.version
+        
+    @property
+    def description(self) -> str:
+        """Convenience property for plugin description"""
+        return self.metadata.description
+    
     async def load(self) -> bool:
         """Default load implementation for core plugins"""
         try:

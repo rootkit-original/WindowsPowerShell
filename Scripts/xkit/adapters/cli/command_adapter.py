@@ -543,7 +543,44 @@ class CommandAdapter(ICommandService):
 
     async def _handle_plugin_list(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle plugin list command"""
-        return "🧩 Plugins: No plugins currently loaded (placeholder implementation)"
+        try:
+            # Get plugin manager from container
+            from xkit.plugins.manager import PluginManager
+            from xkit.core.container import container
+            
+            plugin_manager = container.get(PluginManager)
+            if not plugin_manager:
+                return "❌ Plugin Manager not available"
+            
+            # Get loaded plugins
+            loaded_plugins = plugin_manager.loaded_plugins
+            
+            if not loaded_plugins:
+                return "📦 No plugins currently loaded\\n💡 Plugins will auto-load when needed"
+            
+            result = ["🧩 Loaded Plugins:", "=" * 20]
+            
+            for plugin_name, plugin in loaded_plugins.items():
+                status_emoji = {
+                    "active": "🟢",
+                    "loaded": "🔵", 
+                    "loading": "🟡",
+                    "error": "🔴",
+                    "unloaded": "⚫"
+                }.get(plugin.status.value if hasattr(plugin, 'status') else 'unknown', "❓")
+                
+                name = plugin.name if hasattr(plugin, 'name') else plugin_name
+                version = plugin.version if hasattr(plugin, 'version') else 'unknown'
+                description = plugin.description if hasattr(plugin, 'description') else 'No description'
+                
+                result.append(f"  {status_emoji} {name} v{version}")
+                result.append(f"    {description}")
+                result.append("")
+            
+            return "\\n".join(result)
+            
+        except Exception as e:
+            return f"❌ Error listing plugins: {str(e)}"
 
     async def _handle_events_status(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle events status command"""

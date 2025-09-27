@@ -47,6 +47,11 @@ class PluginManager:
         self.file_watchers: Dict[str, Any] = {}
         self.hot_reload_enabled = True
     
+    @property
+    def loaded_plugins(self) -> Dict[str, XKitPlugin]:
+        """Alias for plugins for backward compatibility"""
+        return self.plugins
+    
     async def initialize(self) -> None:
         """Initialize the plugin manager"""
         self.logger.info("Initializing Plugin Manager")
@@ -82,6 +87,69 @@ class PluginManager:
             await core_plugin_registry.load_all_core_plugins(self)
         except Exception as e:
             self.logger.error(f"Failed to load core plugins: {e}")
+        
+        # Also try to load plugins from current directory
+        await self._load_directory_plugins()
+    
+    async def _load_directory_plugins(self) -> None:
+        """Load plugins from plugin directories"""
+        current_dir = Path(__file__).parent
+        
+        # Try to load common plugins
+        plugin_files = [
+            "telegram_plugin.py",
+            "project_analyzer_plugin.py"
+        ]
+        
+        for plugin_file in plugin_files:
+            plugin_path = current_dir / plugin_file
+            if plugin_path.exists():
+                try:
+                    plugin_name = plugin_file.replace("_plugin.py", "").replace("_", "-")
+                    self.logger.debug(f"Attempting to load {plugin_name} from {plugin_path}")
+                    await self.load_plugin_from_path(plugin_name, plugin_path)
+                except Exception as e:
+                    self.logger.warning(f"Failed to load plugin {plugin_name}: {e}")
+    
+    async def load_plugin_from_path(self, plugin_name: str, plugin_path: Path) -> bool:
+        """Load a plugin from a specific file path"""
+        try:
+            # Import the plugin module
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(plugin_name, plugin_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            
+            # Find plugin classes in the module
+            import inspect
+            plugin_classes = [
+                obj for name, obj in inspect.getmembers(module)
+                if inspect.isclass(obj) and hasattr(obj, '__bases__') 
+                and any('Plugin' in base.__name__ for base in obj.__bases__)
+                and obj.__module__ == module.__name__
+            ]
+            
+            if not plugin_classes:
+                self.logger.warning(f"No plugin class found in {plugin_path}")
+                return False
+                
+            # Instantiate and load the plugin
+            plugin_class = plugin_classes[0]
+            plugin = plugin_class()
+            
+            # Initialize plugin
+            success = await plugin.load()
+            if success:
+                self.plugins[plugin_name] = plugin
+                self.logger.info(f"Loaded plugin: {plugin_name}")
+                return True
+            else:
+                self.logger.error(f"Failed to initialize plugin: {plugin_name}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error loading plugin {plugin_name}: {e}")
+            return False
     
     async def discover_plugins(self) -> List[PluginMetadata]:
         """Discover all available plugins in plugin directories"""
