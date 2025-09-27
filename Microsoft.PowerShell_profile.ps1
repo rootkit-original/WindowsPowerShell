@@ -1,5 +1,77 @@
-# XKit v3.0 - Standardized Command Structure
-# Minimal PowerShell Profile that loads the new xkit command
+# XKit v3.0 - Standardized Command Stru# XKit Legacy Commands (clean version without prompt changes)
+$XKitLegacy = "$PSScriptRoot\xkit-legacy-commands.ps1"
+if (Test-Path $XKitLegacy) {
+    . $XKitLegacy
+} else {
+    # Fallback to full Oh-My-XKit if legacy commands not found
+    $OhMyXKit = "$PSScriptRoot\oh-my-xkit\oh-my-xkit.ps1"
+    if (Test-Path $OhMyXKit) {
+        Write-Host "🎨 Loading Oh-My-XKit (full version)..." -ForegroundColor Magenta
+        . $OhMyXKit
+        Write-Host "✅ Oh-My-XKit loaded" -ForegroundColor Green
+    }
+}
+
+# Oh-My-XKit style prompt function for WindowsPowerShell directory
+function global:prompt {
+    $Host.UI.RawUI.WindowTitle = "XKit PowerShell - $(Get-Location)"
+    
+    # Get current directory name
+    $currentDir = Split-Path -Leaf -Path (Get-Location)
+    if ($currentDir -eq "") { $currentDir = "~" }
+    
+    # Get git branch if in git repo
+    $gitBranch = ""
+    $gitStatus = ""
+    try {
+        $branch = git rev-parse --abbrev-ref HEAD 2>$null
+        if ($branch) {
+            $gitBranch = " [$branch]"
+            
+            # Check git status for indicators
+            $status = git status --porcelain 2>$null
+            if ($status) {
+                $gitStatus = " *"  # Indicate changes
+            }
+        }
+    } catch {
+        # Not a git repo or git not available
+    }
+    
+    # Get container info (Docker/Podman)
+    $containerInfo = ""
+    if ($env:DOCKER_HOST -or (Get-Command docker -ErrorAction SilentlyContinue)) {
+        try {
+            $containers = docker ps --format "table {{.Names}}" 2>$null | Measure-Object -Line
+            if ($containers.Lines -gt 1) {
+                $containerInfo = " [docker]"
+            }
+        } catch { }
+    }
+    
+    # Check for Podman as well
+    if ((Get-Command podman -ErrorAction SilentlyContinue)) {
+        try {
+            $podmanContainers = podman ps --format "table {{.Names}}" 2>$null | Measure-Object -Line
+            if ($podmanContainers.Lines -gt 1) {
+                $containerInfo = " [podman]"
+            }
+        } catch { }
+    }
+    
+    # Build prompt similar to oh-my-zsh
+    $userName = $env:USERNAME
+    $computerName = $env:COMPUTERNAME
+    
+    Write-Host "$userName@$computerName " -NoNewline -ForegroundColor Green
+    Write-Host "$gitBranch" -NoNewline -ForegroundColor Yellow
+    Write-Host "$gitStatus" -NoNewline -ForegroundColor Red
+    Write-Host " ~$currentDir" -NoNewline -ForegroundColor Blue  
+    Write-Host "$containerInfo" -NoNewline -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "$ " -NoNewline -ForegroundColor White
+    return " "
+}mal PowerShell Profile that loads the new xkit command
 
 # Configure UTF-8 support for emojis FIRST
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -37,6 +109,20 @@ if (Test-Path $XKitCommand) {
     }
 }
 
+# Load XKit Legacy Commands (clean version without prompt changes)
+$XKitLegacy = "$PSScriptRoot\xkit-legacy-commands.ps1"
+if (Test-Path $XKitLegacy) {
+    . $XKitLegacy
+} else {
+    # Fallback to full Oh-My-XKit if legacy commands not found
+    $OhMyXKit = "$PSScriptRoot\oh-my-xkit\oh-my-xkit.ps1"
+    if (Test-Path $OhMyXKit) {
+        Write-Host "🎨 Loading Oh-My-XKit (full version)..." -ForegroundColor Magenta
+        . $OhMyXKit
+        Write-Host "✅ Oh-My-XKit loaded" -ForegroundColor Green
+    }
+}
+
 # Chocolatey Integration
 $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 if (Test-Path($ChocolateyProfile)) {
@@ -50,8 +136,70 @@ $env:GITLAB_URL = 'https://localhost'
 # XKit v3.0 Configuration
 $env:XKIT_VERSION = '3.0.0'
 $env:XKIT_ARCHITECTURE = 'hybrid-mcp'
+$env:XKIT_RELEASE_DATE = '2025-09-26'
+$env:XKIT_CODENAME = 'Hybrid MCP Architecture'
 $env:GEMINI_API_KEY = 'AIzaSyBsjNVK3p544LLk_OL4IChy7OdApkhS7vA'
 $env:TELEGRAM_TOKEN = '8477588651:AAGaQLuk7hsfW5UWiNEnpGWK2Z6rRLg9A-s'
 $env:ADMIN_ID = '7335391186'
+
+# XKit AutoStart Functions
+function Send-XKitTelegramNotification {
+    param(
+        [string]$Message,
+        [switch]$Silent
+    )
+    
+    $Token = $env:TELEGRAM_TOKEN
+    $ChatId = $env:ADMIN_ID
+    
+    if (-not $Token -or -not $ChatId) {
+        if (-not $Silent) { Write-Host "⚠️  Telegram não configurado" -ForegroundColor Yellow }
+        return $false
+    }
+    
+    try {
+        $Body = @{
+            chat_id = $ChatId
+            text = $Message
+            parse_mode = "Markdown"
+        }
+        
+        $Uri = "https://api.telegram.org/bot$Token/sendMessage"
+        Invoke-RestMethod -Uri $Uri -Method POST -Body $Body -TimeoutSec 10 | Out-Null
+        
+        if (-not $Silent) { Write-Host "📱 Notificação enviada" -ForegroundColor Green }
+        return $true
+    } catch {
+        if (-not $Silent) { Write-Host "❌ Erro Telegram: $($_.Exception.Message)" -ForegroundColor Red }
+        return $false
+    }
+}
+
+function global:xkit-notify {
+    param([string]$Message = "🚀 XKit executado em $(Get-Date -Format 'HH:mm:ss')")
+    Send-XKitTelegramNotification $Message
+}
+
+# Auto-notification on profile load (only if not in autostart mode)
+if (-not $env:XKIT_AUTOSTART_MODE) {
+    $StartupMessage = @"
+🖥️ **PowerShell Iniciado**
+🚀 **XKit v3.0 Profile Carregado**
+⏰ **Horário:** $(Get-Date -Format 'dd/MM/yyyy HH:mm:ss')
+💻 **Sistema:** $env:COMPUTERNAME
+👤 **Usuário:** $env:USERNAME
+🏗️ **Arquitetura:** $env:XKIT_ARCHITECTURE
+"@
+    
+    # Send notification silently (non-blocking)
+    Start-Job -ScriptBlock {
+        param($msg, $token, $chatid)
+        try {
+            $body = @{ chat_id = $chatid; text = $msg; parse_mode = "Markdown" }
+            $uri = "https://api.telegram.org/bot$token/sendMessage"
+            Invoke-RestMethod -Uri $uri -Method POST -Body $body -TimeoutSec 5 | Out-Null
+        } catch { }
+    } -ArgumentList $StartupMessage, $env:TELEGRAM_TOKEN, $env:ADMIN_ID | Out-Null
+}
 
 # Note: All XKit functions are loaded from xkit-minimal.ps1
