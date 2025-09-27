@@ -224,7 +224,7 @@ class XKit{TEMPLATE_PLUGIN_CLASS}Plugin(XKitCorePlugin):
             # Process command
             result = await self._process_main_command(args)
             
-            return f"✅ {TEMPLATE_PLUGIN_NAME} command completed: {result}"
+            return f"✅ {self.name} command completed: {result}"
             
         except Exception as e:
             self.logger.error(f"Command execution failed: {e}")
