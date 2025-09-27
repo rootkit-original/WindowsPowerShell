@@ -133,17 +133,6 @@ if (-not $global:XKitLoaded) {
             }
         }
         
-        # Load legacy commands
-        if (Test-Path "$XKitBase\xkit-legacy-commands.ps1") {
-            $OriginalLocation = Get-Location
-            Set-Location $XKitBase
-            try {
-                . "$XKitBase\xkit-legacy-commands.ps1"
-            } finally {
-                Set-Location $OriginalLocation
-            }
-        }
-        
         $global:XKitLoaded = $true
         Write-Host "✅ XKit loaded - works from any directory!" -ForegroundColor Green
     } else {

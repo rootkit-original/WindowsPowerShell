@@ -20,7 +20,6 @@ if sys.platform == "win32":
 # Add the xkit module to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Import new hybrid architecture components
 try:
     from xkit.core import XKitApplication, XKitContainer
     from xkit.core.application import ApplicationConfig
@@ -30,25 +29,16 @@ try:
     from xkit.mcp.client import XKitMCPClient
     from xkit.plugins.manager import PluginManager
     
-    # Legacy infrastructure (for gradual migration)
+    # Infrastructure services
     from xkit.infrastructure.display import DisplayService
     from xkit.infrastructure.environment import EnvironmentService
     from xkit.infrastructure.config import ConfigService
     
     HYBRID_MCP_AVAILABLE = True
 except ImportError as e:
-    # Fallback to legacy system if hybrid architecture not available
-    HYBRID_MCP_AVAILABLE = False
-    print(f"⚠️  Hybrid MCP Architecture not available: {e}")
-    print("🔄 Falling back to legacy system...")
-    
-    # Legacy imports
-    try:
-        from xkit.infrastructure.container import XKitContainer
-        from xkit.domain.entities import ErrorType
-    except ImportError:
-        print("❌ Legacy system also not available")
-        HYBRID_MCP_AVAILABLE = None
+    print(f"❌ XKit hybrid architecture not available: {e}")
+    print("� Check Python dependencies and installation")
+    sys.exit(1)
 
 
 class XKitV3Application:
@@ -534,19 +524,7 @@ class XKitV3Application:
         except Exception as e:
             print(f"❌ Erro no cálculo: {e}")
     
-    async def _run_legacy_command(self, action: str, args: List[str]) -> None:
-        """Run command using legacy system"""
-        if action in ["help", "show-help"]:
-            self._show_help()
-        elif action in ["version", "show-version"]:
-            self._show_version()
-        elif action in ["status", "show-status"]:
-            self._show_status()
-        elif action == "system-init":
-            print("🚀 XKit v3.0 System Initialized (Legacy Mode)")
-        else:
-            print(f"❌ Unknown action: {action}")
-            self._show_help()
+
     
     def _show_help(self) -> None:
         """Show XKit help information"""
@@ -600,17 +578,13 @@ class XKitV3Application:
     
     def _show_version(self) -> None:
         """Show version information"""
-        if self.hybrid_available:
-            print("🚀 XKit v3.0.0")
-            print("🏗️  Architecture: Hybrid MCP")
-            print("🔗 MCP Protocol: Active")
-            print("🧩 Plugin System: Available") 
-            print("📡 Event Bus: Active")
-            print("🐍 Python Backend: Active")
-            print("⚡ PowerShell Wrapper: Minimal")
-        else:
-            print("🚀 XKit v3.0.0 (Legacy Mode)")
-            print("⚠️  Hybrid MCP Architecture: Not Available")
+        print("🚀 XKit v3.0.0")
+        print("🏗️  Architecture: Hybrid MCP")
+        print("🔗 MCP Protocol: Active")
+        print("🧩 Plugin System: Available") 
+        print("📡 Event Bus: Active")
+        print("🐍 Python Backend: Active")
+        print("⚡ PowerShell Wrapper: Minimal")
     
     def _show_status(self) -> None:
         """Show system status"""

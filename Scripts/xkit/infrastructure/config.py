@@ -40,6 +40,17 @@ class XKitConfigService(IConfigService):
                     "display": {
                         "emojis": True,
                         "colors": True
+                    },
+                    "telegram": {
+                        "enabled": False,
+                        "token": "",
+                        "admin_id": "",
+                        "notifications": {
+                            "project_analysis": True,
+                            "anomalies": True,
+                            "startup": True
+                        },
+                        "message_format": "markdown"
                     }
                 }
                 self._ensure_config_dir()

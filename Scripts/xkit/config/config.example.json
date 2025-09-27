@@ -1,0 +1,66 @@
+{
+  "_comment": "XKit v3.0 Configuration - ~/.xkit/config.json",
+  "_note": "🤖 Configure seu bot Telegram aqui!",
+  
+  "system": {
+    "debug": false,
+    "log_level": "INFO"
+  },
+  
+  "mcp": {
+    "enabled": true,
+    "max_connections": 10
+  },
+  
+  "plugins": {
+    "auto_load": true,
+    "directories": [],
+    "enabled_plugins": [
+      "project_analyzer",
+      "telegram"
+    ]
+  },
+  
+  "display": {
+    "emojis": true,
+    "colors": true
+  },
+  
+  "telegram": {
+    "_comment": "🤖 Configuração do Bot Telegram",
+    "_setup_instructions": [
+      "1. Converse com @BotFather no Telegram",
+      "2. Use /newbot para criar um novo bot", 
+      "3. Copie o token fornecido para 'token' abaixo",
+      "4. Envie uma mensagem para seu bot",
+      "5. Acesse https://api.telegram.org/bot<TOKEN>/getUpdates",
+      "6. Copie seu chat_id de 'from' -> 'id' para 'admin_id'"
+    ],
+    
+    "enabled": false,
+    "token": "1234567890:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "admin_id": "123456789",
+    
+    "notifications": {
+      "_comment": "Controle quais notificações enviar",
+      "project_analysis": true,
+      "anomalies": true,
+      "startup": true,
+      "git_changes": false
+    },
+    
+    "message_format": "markdown",
+    
+    "_propaganda": {
+      "message": "🚀 XKit v3.0 - Framework PowerShell com Hybrid MCP Architecture",
+      "features": [
+        "🎨 Oh-my-zsh inspired para Windows",
+        "🤖 AI-powered error handling",
+        "🔌 MCP integration", 
+        "🧩 Plugin System com hot-reload",
+        "📡 Event-Driven Architecture"
+      ],
+      "website": "https://github.com/rootkit-original/WindowsPowerShell"
+    }
+  }
+}

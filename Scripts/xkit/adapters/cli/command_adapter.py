@@ -110,20 +110,20 @@ class CommandAdapter(ICommandService):
                 "category": "ai"
             },
             
-            # Project Analysis commands
+            # Project Analysis commands - UNIFIED SMART ANALYSIS
             "analyze-project": {
-                "handler": self._handle_analyze_project,
-                "description": "Analyze .xkit project quality",
-                "category": "project"
-            },
-            "scan-xkit-projects": {
-                "handler": self._handle_scan_projects,
-                "description": "Scan for .xkit projects",
+                "handler": self._handle_smart_project_analysis,
+                "description": "🤖 Smart project analysis with AI (detects .xkit projects)",
                 "category": "project"
             },
             "project-score": {
                 "handler": self._handle_project_score,
-                "description": "Get project quality score",
+                "description": "Get project quality score (legacy - use analyze-project)",
+                "category": "project"
+            },
+            "scan-xkit-projects": {
+                "handler": self._handle_scan_projects,
+                "description": "Scan for .xkit projects (legacy - use analyze-project)",
                 "category": "project"
             }
         }
@@ -757,27 +757,40 @@ Configure GEMINI_API_KEY to enable AI suggestions."""
         except Exception as e:
             return f"❌ AI Service Error: {str(e)}"
     
-    # Project Analysis Handlers
-    async def _handle_analyze_project(self, args: List[str], context: Dict[str, Any]) -> str:
-        """Handle analyze-project command"""
+    # Project Analysis Handlers - SMART AI ANALYSIS
+    async def _handle_smart_project_analysis(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle smart project analysis with AI"""
         try:
             from ...application.use_cases import AnalyzeXKitProjectUseCase
             
             path = args[0] if args else None
             use_case = AnalyzeXKitProjectUseCase(self.display_service)
             
-            # Capture display output
+            # Capture all output for return
             import io
-            from contextlib import redirect_stdout
+            import sys
+            from contextlib import redirect_stdout, redirect_stderr
             
             output = io.StringIO()
-            with redirect_stdout(output):
+            error = io.StringIO()
+            
+            with redirect_stdout(output), redirect_stderr(error):
                 await use_case.execute(path)
             
-            return output.getvalue().strip() or "✅ Análise concluída"
+            result = output.getvalue()
+            error_output = error.getvalue()
+            
+            if error_output:
+                result += f"\n⚠️  Warnings: {error_output}"
+            
+            return result.strip() or "✅ Análise inteligente concluída"
             
         except Exception as e:
-            return f"❌ Erro na análise: {str(e)}"
+            return f"❌ Erro na análise inteligente: {str(e)}\n💡 Certifique-se de que está em um diretório com .xkit"
+    
+    async def _handle_analyze_project(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Legacy handler - redirects to smart analysis"""
+        return await self._handle_smart_project_analysis(args, context)
     
     async def _handle_scan_projects(self, args: List[str], context: Dict[str, Any]) -> str:
         """Handle scan-xkit-projects command"""
