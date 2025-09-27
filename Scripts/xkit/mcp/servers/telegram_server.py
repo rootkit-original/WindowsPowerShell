@@ -6,6 +6,9 @@ Allows communication between XKit and Telegram Bot with access to all plugins
 import asyncio
 import json
 import logging
+import threading
+import subprocess
+import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -24,9 +27,17 @@ class TelegramMCPServer(MCPServer):
         # Telegram service (initialized on demand)
         self._telegram_service = None
         self._config = None
+        
+        # Bot monitoring and management
+        self._bot_online = False
+        self._polling_process = None
+        self._monitor_thread = None
+        self._should_monitor = False
+        self._last_health_check = None
+        self._auto_start_enabled = True
     
     async def initialize(self) -> bool:
-        """Initialize the telegram service"""
+        """Initialize the telegram service with monitoring"""
         try:
             from ...infrastructure.config import XKitConfigService
             from ...infrastructure.telegram_service import TelegramService
@@ -35,28 +46,190 @@ class TelegramMCPServer(MCPServer):
             telegram_config = self._config.get_section("telegram")
             
             if not telegram_config or not telegram_config.get("enabled", False):
-                self.logger.warning("Telegram not enabled in config")
+                self.logger.warning("🤖 Telegram not enabled in config")
                 return False
             
             token = telegram_config.get("token")
             admin_id = telegram_config.get("admin_id")
             
             if not token or not admin_id:
-                self.logger.error("Telegram token/admin_id not configured")
+                self.logger.error("🚫 Telegram token/admin_id not configured")
                 return False
             
             self._telegram_service = TelegramService(token, admin_id)
             
+            # Verificar se bot está disponível
             if not self._telegram_service.is_available():
-                self.logger.error("Telegram service not available")
+                self.logger.error("🔴 Telegram bot not reachable")
                 return False
             
-            self.logger.info("Telegram MCP Server initialized successfully")
+            # Iniciar monitoramento do bot
+            await self._start_bot_monitoring()
+            
+            self.logger.info("✅ Telegram MCP Server initialized successfully")
             return True
             
         except Exception as e:
-            self.logger.error(f"Failed to initialize Telegram MCP Server: {e}")
+            self.logger.error(f"❌ Failed to initialize Telegram MCP Server: {e}")
             return False
+    
+    async def _start_bot_monitoring(self):
+        """Iniciar sistema de monitoramento do bot"""
+        try:
+            self._should_monitor = True
+            
+            # Verificar se bot está online
+            await self._check_bot_status()
+            
+            # Se bot não estiver online, tentar iniciar
+            if not self._bot_online and self._auto_start_enabled:
+                await self._start_bot_polling()
+            
+            # Iniciar thread de monitoramento
+            if not self._monitor_thread or not self._monitor_thread.is_alive():
+                self._monitor_thread = threading.Thread(
+                    target=self._monitor_bot_loop, 
+                    daemon=True
+                )
+                self._monitor_thread.start()
+                self.logger.info("🔄 Bot monitoring started")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Failed to start bot monitoring: {e}")
+    
+    def _monitor_bot_loop(self):
+        """Loop de monitoramento do bot em thread separada - ANTI-SPAM"""
+        while self._should_monitor:
+            try:
+                # Verificar status a cada 30 segundos
+                asyncio.run(self._check_bot_status())
+                
+                # ANTI-SPAM: Desabilitar auto-restart temporariamente
+                # Se bot offline, tentar reiniciar (DESABILITADO)
+                if False and not self._bot_online and self._auto_start_enabled:
+                    self.logger.warning("🟡 Bot offline, attempting restart...")
+                    # Aguardar mais tempo antes de tentar reiniciar
+                    time.sleep(120)  # Esperar 2 minutos
+                    asyncio.run(self._start_bot_polling())
+                
+                time.sleep(60)  # AUMENTADO: Verificar a cada 60 segundos (menos frequente)
+                
+            except Exception as e:
+                self.logger.error(f"❌ Error in bot monitoring: {e}")
+                time.sleep(120)  # Esperar ainda mais tempo em caso de erro
+    
+    async def _check_bot_status(self) -> bool:
+        """Verificar se bot está online e funcionando"""
+        try:
+            # Verificar se processo de polling está rodando
+            if self._polling_process and self._polling_process.poll() is None:
+                self._bot_online = True
+                self._last_health_check = datetime.now()
+                return True
+            
+            # Verificar se pode fazer request para API do Telegram
+            if self._telegram_service:
+                try:
+                    bot_info = self._telegram_service.get_bot_info()  # Não é async
+                    if bot_info:
+                        self.logger.debug("✅ Bot API responding")
+                        return True
+                except Exception:
+                    pass
+            
+            self._bot_online = False
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"❌ Bot health check failed: {e}")
+            self._bot_online = False
+            return False
+    
+    async def _start_bot_polling(self) -> bool:
+        """Iniciar processo de polling do bot - ANTI-SPAM PROTECTION"""
+        try:
+            # ANTI-SPAM: Verificar se já existem processos de polling
+            import psutil
+            telegram_processes = []
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = proc.info['cmdline'] or []
+                    if any('telegram-bot-polling' in str(cmd) for cmd in cmdline):
+                        telegram_processes.append(proc.info['pid'])
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            if telegram_processes:
+                self.logger.warning(f"🚫 ANTI-SPAM: {len(telegram_processes)} processos de polling já rodando. Abortando.")
+                return False
+            
+            # Parar processo anterior se existir
+            if self._polling_process and self._polling_process.poll() is None:
+                self._polling_process.terminate()
+                await asyncio.sleep(2)
+                
+                # Force kill se necessário
+                if self._polling_process.poll() is None:
+                    self._polling_process.kill()
+                    await asyncio.sleep(1)
+            
+            # Caminho para o script de polling
+            polling_script = Path(__file__).parent.parent.parent.parent.parent / "telegram-bot-polling.py"
+            
+            if not polling_script.exists():
+                self.logger.error(f"🚫 Polling script not found: {polling_script}")
+                return False
+            
+            # ANTI-SPAM: Verificar novamente antes de iniciar
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = proc.info['cmdline'] or []
+                    if any('telegram-bot-polling' in str(cmd) for cmd in cmdline):
+                        self.logger.warning("🚫 ANTI-SPAM: Processo detectado durante inicialização. Cancelando.")
+                        return False
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            # Iniciar processo de polling
+            self.logger.info("🚀 Iniciando processo único de polling...")
+            self._polling_process = subprocess.Popen([
+                "python", str(polling_script)
+            ], 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
+                cwd=str(polling_script.parent)
+            )
+            
+            # Dar tempo para o processo iniciar
+            await asyncio.sleep(3)
+            
+            # Verificar se processo iniciou corretamente
+            if self._polling_process.poll() is None:
+                self._bot_online = True
+                self.logger.info("✅ Bot polling started successfully (single instance)")
+                return True
+            else:
+                self.logger.error("❌ Failed to start bot polling process")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"❌ Error starting bot polling: {e}")
+            return False
+    
+    def get_bot_status(self) -> Dict[str, Any]:
+        """Obter status detalhado do bot"""
+        status = {
+            "online": self._bot_online,
+            "last_check": self._last_health_check.isoformat() if self._last_health_check else None,
+            "auto_start_enabled": self._auto_start_enabled,
+            "monitoring": self._should_monitor,
+            "process_running": self._polling_process and self._polling_process.poll() is None
+        }
+        
+        if not self._bot_online:
+            status["error"] = "Bot is offline - check configuration and network"
+            
+        return status
     
     async def list_tools(self) -> List[Tool]:
         """List available Telegram tools"""
@@ -83,6 +256,26 @@ class TelegramMCPServer(MCPServer):
                         }
                     },
                     "required": ["message"]
+                }
+            ),
+            Tool(
+                name="check-bot-status",
+                description="Check if Telegram bot is online and functioning",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "detailed": {
+                            "type": "boolean", 
+                            "description": "Return detailed status info",
+                            "default": True
+                        },
+                        "restart_if_offline": {
+                            "type": "boolean",
+                            "description": "Attempt to restart bot if offline",
+                            "default": True
+                        }
+                    },
+                    "required": []
                 }
             ),
             Tool(
@@ -215,6 +408,7 @@ class TelegramMCPServer(MCPServer):
             # Route to appropriate handler
             handler_map = {
                 "send-message": self._handle_send_message,
+                "check-bot-status": self._handle_check_bot_status,
                 "send-project-report": self._handle_send_project_report,
                 "send-system-status": self._handle_send_system_status,
                 "send-git-status": self._handle_send_git_status,
@@ -250,6 +444,81 @@ class TelegramMCPServer(MCPServer):
             "format": format_type,
             "timestamp": datetime.now().isoformat()
         }
+    
+    async def _handle_check_bot_status(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Check Telegram bot status and optionally restart"""
+        detailed = args.get("detailed", True)
+        restart_if_offline = args.get("restart_if_offline", True)
+        
+        try:
+            # Verificar status atual
+            status = self.get_bot_status()
+            
+            # Se offline e restart habilitado, tentar reiniciar
+            if not status["online"] and restart_if_offline:
+                self.logger.info("🔄 Bot offline, attempting restart...")
+                
+                # Tentar iniciar monitoramento e bot
+                await self._start_bot_monitoring()
+                
+                # Aguardar um pouco e verificar novamente
+                await asyncio.sleep(5)
+                status = self.get_bot_status()
+            
+            # Preparar resposta
+            if detailed:
+                # Retornar status detalhado
+                response = {
+                    "status": "online" if status["online"] else "offline",
+                    "details": status,
+                    "message": self._format_status_message(status)
+                }
+            else:
+                # Retornar status simples
+                response = {
+                    "online": status["online"],
+                    "message": "✅ Bot online" if status["online"] else "🔴 Bot offline"
+                }
+            
+            # Se solicitado e online, enviar status para o Telegram
+            if status["online"]:
+                status_msg = f"🤖 **Bot Status Check** ✅\n\n{response['message']}\n\n⏰ Check: {datetime.now().strftime('%H:%M:%S')}"
+                try:
+                    await asyncio.get_event_loop().run_in_executor(
+                        None, self._telegram_service._send_message, status_msg
+                    )
+                except:
+                    pass  # Não falhar se envio falhar
+            
+            return response
+            
+        except Exception as e:
+            error_response = {
+                "online": False,
+                "error": str(e),
+                "message": f"❌ Error checking bot status: {e}"
+            }
+            
+            self.logger.error(f"Error checking bot status: {e}")
+            return error_response
+    
+    def _format_status_message(self, status: Dict[str, Any]) -> str:
+        """Format status into readable message"""
+        if status["online"]:
+            msg = "✅ **Bot Status: ONLINE**\n\n"
+            msg += f"🔄 Monitoring: {'Active' if status['monitoring'] else 'Inactive'}\n"
+            msg += f"⚡ Process: {'Running' if status['process_running'] else 'Stopped'}\n"
+            msg += f"🏠 Auto-start: {'Enabled' if status['auto_start_enabled'] else 'Disabled'}\n"
+            
+            if status['last_check']:
+                msg += f"🕒 Last check: {status['last_check']}"
+        else:
+            msg = "🔴 **Bot Status: OFFLINE**\n\n"
+            msg += f"❌ Error: {status.get('error', 'Unknown error')}\n"
+            msg += f"🔄 Monitoring: {'Active' if status.get('monitoring') else 'Inactive'}\n"
+            msg += f"🏠 Auto-start: {'Enabled' if status.get('auto_start_enabled') else 'Disabled'}"
+            
+        return msg
     
     async def _handle_send_project_report(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Send project analysis report to Telegram"""
@@ -689,3 +958,29 @@ Desenvolvido com ❤️ para desenvolvedores"""
             
         except Exception as e:
             return f"❌ Erro na análise: {str(e)}"
+    
+    async def shutdown(self):
+        """Cleanup when server shuts down"""
+        try:
+            # Parar monitoramento
+            self._should_monitor = False
+            
+            # Parar processo de polling
+            if self._polling_process and self._polling_process.poll() is None:
+                self.logger.info("🛑 Stopping bot polling process...")
+                self._polling_process.terminate()
+                await asyncio.sleep(2)
+                
+                # Force kill se necessário
+                if self._polling_process.poll() is None:
+                    self._polling_process.kill()
+            
+            # Aguardar thread de monitoramento
+            if self._monitor_thread and self._monitor_thread.is_alive():
+                self._monitor_thread.join(timeout=5)
+            
+            self._bot_online = False
+            self.logger.info("✅ Telegram MCP Server shutdown complete")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Error during shutdown: {e}")

@@ -197,18 +197,20 @@ class TelegramPlugin(XKitCorePlugin):
             print(f"⚠️ Erro ao processar comando MCP: {e}")
 
     async def _on_project_analyzed(self, event) -> None:
-        """Handler melhorado com integração MCP"""
+        """Handler melhorado com integração MCP - ANTI-SPAM"""
         if not self._should_send_notification("project_analysis"):
+            return
+        
+        # ANTI-SPAM: Verificar se o evento foi disparado por comando Telegram
+        # Se foi comando direto do Telegram, o MCP server já enviou a resposta
+        event_source = event.data.get("source", "unknown")
+        if event_source == "telegram_command":
+            print("🚫 Anti-spam: Evento de comando Telegram ignorado pelo plugin")
             return
             
         analysis: ProjectInfo = event.data.get("analysis")
         if analysis:
-            # Método tradicional (fallback)
-            if self.telegram_service:
-                message = self._format_analysis_message(analysis)
-                await asyncio.create_task(self._send_async_message(message))
-            
-            # Método MCP (preferred)
+            # CORRIGIDO: Usar APENAS MCP (não duplicar)
             if self._telegram_server_active:
                 try:
                     result = await self.mcp_client.call_tool(
@@ -225,7 +227,16 @@ class TelegramPlugin(XKitCorePlugin):
                         print("📱 Relatório enviado via MCP Server!")
                     
                 except Exception as e:
-                    print(f"⚠️ Erro MCP fallback para método tradicional: {e}")
+                    print(f"⚠️ Erro MCP, usando método tradicional: {e}")
+                    # Fallback APENAS se MCP falhar
+                    if self.telegram_service:
+                        message = self._format_analysis_message(analysis)
+                        await asyncio.create_task(self._send_async_message(message))
+            
+            # Se não tiver MCP, usar método tradicional
+            elif self.telegram_service:
+                message = self._format_analysis_message(analysis)
+                await asyncio.create_task(self._send_async_message(message))
     
     async def _on_anomalies_detected(self, event) -> None:
         """Handler para quando anomalias são detectadas"""

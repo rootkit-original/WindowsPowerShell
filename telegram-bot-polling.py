@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 """
 XKit Telegram Bot Polling - Sistema de escuta automática para comandos
-Implementa polling para processar comandos enviados no Telegram
+Implementa polling para processar comandos enviados no T                        print(f"🔄 Processadas {processed_count} mensagens novas. Last ID: {self.last_update_id}")
+                    
+                    # Limpeza periódica do cache (manter últimas 1000 mensagens)
+                    if len(self.processed_messages) > 1000:
+                        # Remove mensagens mais antigas
+                        sorted_messages = sorted(self.processed_messages)
+                        self.processed_messages = set(sorted_messages[-500:])
+                        
+        except requests.exceptions.Timeout:
+            pass  # Timeout normalram
 """
 import sys
 import asyncio
@@ -42,6 +51,8 @@ class TelegramBotPoller:
         self.mcp_client = XKitMCPClient()
         self.last_update_id = 0
         self.running = False
+        self.processed_messages = set()  # Controle de mensagens já processadas
+        self.command_count = 0
         
     def is_configured(self) -> bool:
         """Verifica se está configurado"""
@@ -65,6 +76,9 @@ class TelegramBotPoller:
         
         # Limpar mensagens antigas para evitar loop
         await self._clear_old_messages()
+        
+        # Enviar mensagem de inicialização
+        await self._send_startup_message()
         
         # Loop principal de polling
         while self.running:
@@ -149,13 +163,21 @@ class TelegramBotPoller:
                     updates = data["result"]
                     
                     # Processa todas as mensagens
+                    processed_count = 0
                     for update in updates:
-                        await self._process_update(update)
-                        # IMPORTANTE: Atualiza o ID IMEDIATAMENTE após processar
-                        self.last_update_id = update["update_id"]
+                        update_id = update["update_id"]
                         
-                    if updates:
-                        print(f"🔄 Processadas {len(updates)} mensagens. Last ID: {self.last_update_id}")
+                        # Evitar duplicatas
+                        if update_id not in self.processed_messages:
+                            await self._process_update(update)
+                            self.processed_messages.add(update_id)
+                            processed_count += 1
+                        
+                        # IMPORTANTE: Atualiza o ID IMEDIATAMENTE após processar
+                        self.last_update_id = max(self.last_update_id, update_id)
+                        
+                    if processed_count > 0:
+                        print(f"🔄 Processadas {processed_count} mensagens novas. Last ID: {self.last_update_id}")
                         
         except requests.exceptions.Timeout:
             pass  # Timeout normal
@@ -244,6 +266,48 @@ class TelegramBotPoller:
     def stop(self):
         """Para o polling"""
         self.running = False
+    
+    async def _send_startup_message(self):
+        """Envia mensagem de inicialização robusta"""
+        startup_msg = f"""🚀 **XKit v3.0 - Bot Iniciado com Sucesso!** ✅
+
+🌆 **Sistema Hybrid MCP Architecture Online**
+
+📅 **Iniciado:** {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}
+🔄 **Polling:** Ativo e monitorando
+👤 **Admin ID:** `{self.admin_id}`
+🤖 **Bot ID:** @xkit_bot
+
+🛠️ **Funcionalidades Ativas:**
+• ✅ **Análise de Projetos** - IA + Métricas
+• ✅ **Monitoramento Git** - Status em tempo real
+• ✅ **Sistema MCP** - 8 ferramentas disponíveis
+• ✅ **Auto-Recovery** - Restart automático
+• ✅ **Plugins** - Arquitetura modular
+
+📱 **Comandos Principais:**
+• `/analyze` - Análise profissional do projeto
+• `/status` - Status completo do XKit  
+• `/git` - Informações do repositório
+• `/plugins` - Listar plugins carregados
+• `/help` - Lista completa de comandos
+
+🎁 **Novidades v3.0:**
+• 🔍 **Sistema de monitoramento** 24/7
+• 📦 **Estrutura de plugins** reorganizada
+• 🔄 **Auto-restart** em caso de falhas
+• 📊 **Métricas avançadas** de projetos
+
+🎯 **Pronto para comandos!** Digite `/help` para começar."""
+        
+        try:
+            await self.mcp_client.call_tool('telegram-bot', 'send-message', {
+                'message': startup_msg,
+                'format': 'markdown'
+            })
+            print("✅ Mensagem de startup enviada!")
+        except Exception as e:
+            print(f"⚠️ Erro enviando mensagem de startup: {e}")
 
 
 async def main():
