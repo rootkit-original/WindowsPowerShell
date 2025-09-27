@@ -61,4 +61,9 @@ secrets.json
 
 # Windows specific
 desktop.ini
-$RECYCLE.BIN/
+$RECYCLE.BIN/# XKit System Cleanup - Auto-generated entries
+*.log
+startup.log
+Scripts/telegram/legacy/
+backup-*/
+
