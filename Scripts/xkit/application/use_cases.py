@@ -103,26 +103,29 @@ class AnalyzeXKitProjectUseCase:
             # 1. Análise do Git
             git_analysis = await self._analyze_git_repo(project_path)
             
-            # 2. Análise profunda dos arquivos de documentação
+            # 2. 🆕 Análise do GitHub (issues e PRs)
+            github_analysis = await self._analyze_github_issues(project_path)
+            
+            # 3. Análise profunda dos arquivos de documentação
             doc_analysis = await self._analyze_documentation_deep(project_path)
             
-            # 3. Análise multithread da estrutura de código
+            # 4. Análise multithread da estrutura de código
             code_analysis = await self._analyze_code_structure_multithread(project_path)
             
-            # 4. Detecção de problemas do projeto
+            # 5. Detecção de problemas do projeto
             issues = await self._detect_project_issues(project_path)
             
-            # 5. Arquivos perdidos importantes
+            # 6. Arquivos perdidos importantes
             missing_files = await self._find_missing_files(project_path)
             
-            # 6. Prompt para Gemini com contexto enriquecido
-            context = self._build_enhanced_ai_context(project_path, git_analysis, doc_analysis, code_analysis, issues, missing_files)
+            # 7. Prompt para Gemini com contexto enriquecido
+            context = self._build_enhanced_ai_context(project_path, git_analysis, github_analysis, doc_analysis, code_analysis, issues, missing_files)
             
             print("🧠 Analisando com IA...")
             ai_response = await self._get_gemini_analysis(ai_service, context)
             
-            # 7. Exibir análise completa e avançada
-            await self._display_enhanced_analysis(ai_response, git_analysis, doc_analysis, code_analysis, issues, missing_files)
+            # 8. Exibir análise completa e avançada
+            await self._display_enhanced_analysis(ai_response, git_analysis, github_analysis, doc_analysis, code_analysis, issues, missing_files)
             
         except Exception as e:
             print(f"❌ Erro na análise com IA: {e}")
@@ -153,6 +156,33 @@ class AnalyzeXKitProjectUseCase:
                                   cwd=project_path, capture_output=True, text=True)
             git_info['last_commit'] = result.stdout.strip() if result.returncode == 0 else "unknown"
             
+            # 🆕 Últimos 3 commits com detalhes
+            result = subprocess.run(['git', 'log', '-3', '--oneline', '--decorate'], 
+                                  cwd=project_path, capture_output=True, text=True)
+            if result.returncode == 0:
+                commits = []
+                for line in result.stdout.split('\n'):
+                    if line.strip():
+                        commits.append(line.strip())
+                git_info['recent_commits'] = commits
+            
+            # Informações de commit com data
+            result = subprocess.run(['git', 'log', '-3', '--format=%h|%s|%an|%ar'], 
+                                  cwd=project_path, capture_output=True, text=True)
+            if result.returncode == 0:
+                detailed_commits = []
+                for line in result.stdout.split('\n'):
+                    if line.strip():
+                        parts = line.strip().split('|', 3)
+                        if len(parts) == 4:
+                            detailed_commits.append({
+                                'hash': parts[0],
+                                'message': parts[1],
+                                'author': parts[2],
+                                'date': parts[3]
+                            })
+                git_info['detailed_commits'] = detailed_commits
+            
             # Arquivos modificados
             result = subprocess.run(['git', 'status', '--porcelain'], 
                                   cwd=project_path, capture_output=True, text=True)
@@ -170,6 +200,61 @@ class AnalyzeXKitProjectUseCase:
             git_info['error'] = str(e)
         
         return git_info
+
+    async def _analyze_github_issues(self, project_path: Path) -> dict:
+        """🆕 Analisa issues do GitHub usando gh CLI"""
+        github_info = {}
+        
+        try:
+            import subprocess
+            
+            # Verificar se gh CLI está disponível
+            result = subprocess.run(['gh', '--version'], 
+                                  capture_output=True, text=True)
+            if result.returncode != 0:
+                github_info['error'] = "GitHub CLI (gh) não está instalado"
+                return github_info
+            
+            # Verificar se está autenticado
+            result = subprocess.run(['gh', 'auth', 'status'], 
+                                  cwd=project_path, capture_output=True, text=True)
+            if result.returncode != 0:
+                github_info['error'] = "GitHub CLI não está autenticado (use: gh auth login)"
+                return github_info
+            
+            # Buscar issues abertas
+            result = subprocess.run(['gh', 'issue', 'list', '--state', 'open', '--limit', '5', 
+                                   '--json', 'number,title,author,createdAt,labels'], 
+                                  cwd=project_path, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                import json
+                try:
+                    issues_data = json.loads(result.stdout)
+                    github_info['open_issues'] = issues_data
+                    github_info['open_issues_count'] = len(issues_data)
+                except json.JSONDecodeError:
+                    github_info['error'] = "Erro ao processar dados das issues"
+            else:
+                github_info['error'] = f"Erro ao buscar issues: {result.stderr}"
+            
+            # Buscar PRs abertos
+            result = subprocess.run(['gh', 'pr', 'list', '--state', 'open', '--limit', '3',
+                                   '--json', 'number,title,author,createdAt'], 
+                                  cwd=project_path, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                try:
+                    prs_data = json.loads(result.stdout)
+                    github_info['open_prs'] = prs_data
+                    github_info['open_prs_count'] = len(prs_data)
+                except json.JSONDecodeError:
+                    pass
+            
+        except Exception as e:
+            github_info['error'] = str(e)
+        
+        return github_info
 
     async def _detect_project_issues(self, project_path: Path) -> dict:
         """Detecta problemas no projeto (arquivos grandes, extensões estranhas, etc.)"""
@@ -559,7 +644,7 @@ class AnalyzeXKitProjectUseCase:
         
         return structure
 
-    def _build_enhanced_ai_context(self, project_path: Path, git_info: dict, docs: dict, 
+    def _build_enhanced_ai_context(self, project_path: Path, git_info: dict, github_info: dict, docs: dict, 
                                    code_structure: dict, issues: dict, missing_files: dict) -> str:
         """Constrói contexto enriquecido para análise IA"""
         context_parts = [
@@ -571,9 +656,56 @@ class AnalyzeXKitProjectUseCase:
             f"Branches remotas: {', '.join(git_info.get('remote_branches', [])[:5])}",
             f"Último commit: {git_info.get('last_commit', 'N/A')}",
             f"Arquivos modificados: {git_info.get('modified_files', 0)}",
-            "",
-            "## 📚 Análise de Documentação",
         ]
+        
+        # 🆕 Últimos commits detalhados
+        detailed_commits = git_info.get('detailed_commits', [])
+        if detailed_commits:
+            context_parts.extend([
+                "",
+                "### 📚 Últimos 3 Commits:",
+            ])
+            for commit in detailed_commits:
+                context_parts.append(
+                    f"- {commit['hash']}: {commit['message']} ({commit['author']}, {commit['date']})"
+                )
+        
+        # 🆕 Informações do GitHub
+        context_parts.extend([
+            "",
+            "## 🐙 Informações do GitHub",
+        ])
+        
+        if github_info.get('error'):
+            context_parts.append(f"⚠️ {github_info['error']}")
+        else:
+            # Issues abertas
+            open_issues = github_info.get('open_issues', [])
+            open_issues_count = github_info.get('open_issues_count', 0)
+            context_parts.append(f"📋 Issues abertas: {open_issues_count}")
+            
+            if open_issues:
+                context_parts.append("Top issues:")
+                for issue in open_issues[:3]:
+                    labels = ', '.join([label['name'] for label in issue.get('labels', [])])
+                    context_parts.append(
+                        f"- #{issue['number']}: {issue['title']} ({issue['author']['login']}) [{labels}]"
+                    )
+            
+            # PRs abertos
+            open_prs = github_info.get('open_prs', [])
+            open_prs_count = github_info.get('open_prs_count', 0)
+            if open_prs_count > 0:
+                context_parts.append(f"� Pull Requests abertos: {open_prs_count}")
+                for pr in open_prs[:2]:
+                    context_parts.append(
+                        f"- #{pr['number']}: {pr['title']} ({pr['author']['login']})"
+                    )
+        
+        context_parts.extend([
+            "",
+            "## �📚 Análise de Documentação",
+        ])
         
         # Documentação com qualidade
         for file_name, info in docs.items():
@@ -778,7 +910,7 @@ Responda de forma concisa mas detalhada, focando em aspectos práticos para dese
         
         print(f"\n✨ Análise completa finalizada!")
 
-    async def _display_enhanced_analysis(self, ai_response, git_info: dict, docs: dict, 
+    async def _display_enhanced_analysis(self, ai_response, git_info: dict, github_info: dict, docs: dict, 
                                          code_structure: dict, issues: dict, missing_files: dict):
         """Display avançado com todas as informações"""
         
@@ -790,7 +922,30 @@ Responda de forma concisa mas detalhada, focando em aspectos práticos para dese
         modified = git_info.get('modified_files', 0)
         print(f"🌿 Git: Branch '{branch}' | {modified} arquivos modificados")
         
-        # Código
+        # 🆕 Últimos commits
+        detailed_commits = git_info.get('detailed_commits', [])
+        if detailed_commits:
+            print(f"📚 Últimos commits:")
+            for commit in detailed_commits[:3]:
+                print(f"  • {commit['hash']}: {commit['message']} ({commit['date']})")
+        
+        # 🆕 Informações do GitHub
+        if not github_info.get('error'):
+            open_issues_count = github_info.get('open_issues_count', 0)
+            open_prs_count = github_info.get('open_prs_count', 0)
+            print(f"🐙 GitHub: {open_issues_count} issues abertas, {open_prs_count} PRs abertas")
+            
+            # Mostrar top issues
+            open_issues = github_info.get('open_issues', [])
+            if open_issues:
+                print(f"📋 Top issues:")
+                for issue in open_issues[:3]:
+                    labels = ', '.join([label['name'] for label in issue.get('labels', [])])
+                    print(f"  • #{issue['number']}: {issue['title']} [{labels}]")
+        else:
+            print(f"🐙 GitHub: {github_info.get('error', 'Não disponível')}")
+        
+        print("")  # Linha em branco
         languages = code_structure.get('languages', {})
         total_files = code_structure.get('total_files', 0)
         total_lines = code_structure.get('total_lines', 0)
