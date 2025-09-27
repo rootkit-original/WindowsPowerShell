@@ -1,0 +1,507 @@
+name: 🚀 Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v3.0.1)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Version Validation and Preparation
+  prepare-release:
+    name: 📋 Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔢 Extract Version Information
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            IS_PRERELEASE="false"
+            # Check if it's a pre-release based on tag (alpha, beta, rc)
+            if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+              IS_PRERELEASE="true"
+            fi
+          fi
+          
+          # Validate version format
+          if [[ ! "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([a-zA-Z0-9\.\-]*)$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            exit 1
+          fi
+          
+          # Normalize version (ensure v prefix)
+          if [[ ! "$VERSION" =~ ^v ]]; then
+            VERSION="v$VERSION"
+          fi
+          
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          
+          echo "Release Version: ${VERSION#v}"
+          echo "Release Tag: $VERSION"
+          echo "Pre-release: $IS_PRERELEASE"
+
+      - name: 📝 Generate Changelog
+        id: changelog
+        run: |
+          echo "::group::📝 Generating changelog"
+          
+          # Get the latest tag before this one
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG="${{ steps.version.outputs.tag }}"
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          
+          # Create changelog header
+          cat > RELEASE_CHANGELOG.md << EOF
+          # 🚀 XKit ${CURRENT_TAG#v} Release Notes
+          
+          **Release Date**: $(date +'%Y-%m-%d')
+          **Tag**: $CURRENT_TAG
+          
+          EOF
+          
+          # Generate changelog based on commits
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "## 📋 Changes Since $PREVIOUS_TAG" >> RELEASE_CHANGELOG.md
+            echo "" >> RELEASE_CHANGELOG.md
+            
+            # Get commits between tags
+            git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD \
+              --grep="feat:" --grep="fix:" --grep="docs:" --grep="refactor:" \
+              --grep="perf:" --grep="test:" --grep="chore:" \
+              >> RELEASE_CHANGELOG.md || echo "- Initial release" >> RELEASE_CHANGELOG.md
+          else
+            echo "## 📋 Initial Release" >> RELEASE_CHANGELOG.md
+            echo "" >> RELEASE_CHANGELOG.md
+            echo "- 🎉 First release of XKit v3.0 with Hybrid MCP Architecture" >> RELEASE_CHANGELOG.md
+          fi
+          
+          # Add sections based on commit types
+          echo "" >> RELEASE_CHANGELOG.md
+          echo "### ✨ Features" >> RELEASE_CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD --grep="feat:" >> RELEASE_CHANGELOG.md || echo "- No new features" >> RELEASE_CHANGELOG.md
+          
+          echo "" >> RELEASE_CHANGELOG.md
+          echo "### 🐛 Bug Fixes" >> RELEASE_CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD --grep="fix:" >> RELEASE_CHANGELOG.md || echo "- No bug fixes" >> RELEASE_CHANGELOG.md
+          
+          echo "" >> RELEASE_CHANGELOG.md
+          echo "### 📚 Documentation" >> RELEASE_CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD --grep="docs:" >> RELEASE_CHANGELOG.md || echo "- No documentation changes" >> RELEASE_CHANGELOG.md
+          
+          echo "" >> RELEASE_CHANGELOG.md
+          echo "### 🔧 Technical Changes" >> RELEASE_CHANGELOG.md
+          git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD --grep="refactor:" --grep="perf:" --grep="test:" --grep="chore:" >> RELEASE_CHANGELOG.md || echo "- No technical changes" >> RELEASE_CHANGELOG.md
+          
+          # Add installation instructions
+          cat >> RELEASE_CHANGELOG.md << EOF
+          
+          ## 📦 Installation
+          
+          ### Quick Install (Recommended)
+          \`\`\`powershell
+          irm https://raw.githubusercontent.com/rootkit-original/WindowsPowerShell/main/install-xkit-v3.ps1 | iex
+          \`\`\`
+          
+          ### Manual Install
+          \`\`\`powershell
+          git clone https://github.com/rootkit-original/WindowsPowerShell.git
+          cd WindowsPowerShell
+          python Scripts\\xkit_main.py --setup
+          \`\`\`
+          
+          ## 🔗 Documentation
+          
+          - **[Quick Start Guide](https://github.com/rootkit-original/WindowsPowerShell#-instalação-rápida)**
+          - **[API Documentation](https://github.com/rootkit-original/WindowsPowerShell/tree/main/docs/api)**
+          - **[Plugin Development](https://github.com/rootkit-original/WindowsPowerShell/blob/main/docs/development/plugin-development.md)**
+          - **[MCP Integration](https://github.com/rootkit-original/WindowsPowerShell/blob/main/docs/api/mcp-protocol.md)**
+          
+          ## ⚠️ Breaking Changes
+          
+          $(if [[ "${{ steps.version.outputs.is_prerelease }}" == "true" ]]; then echo "This is a pre-release version. Please test thoroughly before using in production."; else echo "No breaking changes in this release."; fi)
+          
+          ## 🐛 Known Issues
+          
+          - See [GitHub Issues](https://github.com/rootkit-original/WindowsPowerShell/issues) for known issues
+          - Report new issues using our [issue templates](https://github.com/rootkit-original/WindowsPowerShell/issues/new/choose)
+          
+          ---
+          
+          **Full Changelog**: https://github.com/rootkit-original/WindowsPowerShell/compare/$PREVIOUS_TAG...$CURRENT_TAG
+          
+          **Made with 💙 by the XKit Community**
+          EOF
+          
+          # Output changelog for use in other steps
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat RELEASE_CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "::endgroup::"
+
+      - name: 📤 Upload Changelog Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-changelog
+          path: RELEASE_CHANGELOG.md
+
+  # Build and Test Release
+  build-and-test:
+    name: 🔨 Build & Test Release
+    runs-on: ${{ matrix.os }}
+    needs: prepare-release
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+          if [ -f "requirements-dev.txt" ]; then pip install -r requirements-dev.txt; fi
+
+      - name: ✅ Run Pre-Release Tests
+        run: |
+          # Run critical tests before release
+          python Scripts/xkit_main.py status
+          python Scripts/xkit_main.py version
+          echo "✅ Basic functionality tests passed"
+
+      - name: 📦 Build Distribution Package
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        run: |
+          echo "::group::📦 Building distribution packages"
+          
+          # Create a minimal setup.py for packaging if needed
+          cat > setup.py << EOF
+          from setuptools import setup, find_packages
+          
+          with open("README.md", "r", encoding="utf-8") as fh:
+              long_description = fh.read()
+          
+          setup(
+              name="xkit-powershell",
+              version="${{ needs.prepare-release.outputs.version }}",
+              author="XKit Team",
+              author_email="contact@xkit.dev", 
+              description="XKit v3.0 - Hybrid MCP Architecture for PowerShell",
+              long_description=long_description,
+              long_description_content_type="text/markdown",
+              url="https://github.com/rootkit-original/WindowsPowerShell",
+              packages=find_packages(where="Scripts"),
+              package_dir={"": "Scripts"},
+              classifiers=[
+                  "Development Status :: 4 - Beta",
+                  "Intended Audience :: Developers",
+                  "License :: OSI Approved :: MIT License",
+                  "Operating System :: OS Independent",
+                  "Programming Language :: Python :: 3",
+                  "Programming Language :: Python :: 3.11",
+                  "Programming Language :: Python :: 3.12",
+                  "Environment :: Console",
+                  "Topic :: Software Development :: Libraries",
+                  "Topic :: System :: Shells",
+              ],
+              python_requires=">=3.11",
+              install_requires=[
+                  # Add actual requirements here
+              ],
+              entry_points={
+                  "console_scripts": [
+                      "xkit=xkit.xkit_main:main",
+                  ],
+              },
+              include_package_data=True,
+              package_data={
+                  "xkit": ["mcp/config.json", "**/*.ps1"],
+              },
+          )
+          EOF
+          
+          python setup.py sdist bdist_wheel
+          echo "::endgroup::"
+
+      - name: 📤 Upload Build Artifacts
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v3
+        with:
+          name: distribution-packages
+          path: dist/*
+
+  # Create GitHub Release
+  create-release:
+    name: 🎉 Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare-release, build-and-test]
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Changelog
+        uses: actions/download-artifact@v3
+        with:
+          name: release-changelog
+
+      - name: 📥 Download Distribution Packages
+        uses: actions/download-artifact@v3
+        with:
+          name: distribution-packages
+          path: dist/
+
+      - name: 🏷️ Create Git Tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "${{ needs.prepare-release.outputs.tag }}" -m "Release ${{ needs.prepare-release.outputs.tag }}"
+          git push origin "${{ needs.prepare-release.outputs.tag }}"
+
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.prepare-release.outputs.tag }}
+          name: "XKit ${{ needs.prepare-release.outputs.version }} 🚀"
+          body_path: RELEASE_CHANGELOG.md
+          draft: false
+          prerelease: ${{ needs.prepare-release.outputs.is_prerelease }}
+          files: |
+            dist/*
+            install-xkit-v3.ps1
+            README.md
+            CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploy Documentation
+  deploy-docs:
+    name: 📚 Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    if: ${{ !needs.prepare-release.outputs.is_prerelease }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📚 Setup Documentation
+        run: |
+          echo "::group::📚 Setting up documentation deployment"
+          
+          # Install documentation tools (if using mkdocs, sphinx, etc.)
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin || true
+          
+          # Create a simple docs index if mkdocs.yml doesn't exist
+          if [ ! -f "mkdocs.yml" ]; then
+            cat > mkdocs.yml << EOF
+          site_name: XKit v3.0 Documentation
+          site_description: XKit Hybrid MCP Architecture Documentation
+          site_url: https://rootkit-original.github.io/WindowsPowerShell/
+          repo_url: https://github.com/rootkit-original/WindowsPowerShell
+          repo_name: WindowsPowerShell
+          
+          theme:
+            name: material
+            palette:
+              primary: blue
+              accent: light blue
+            features:
+              - navigation.tabs
+              - navigation.top
+              - search.highlight
+          
+          nav:
+            - Home: index.md
+            - API Reference:
+              - Core API: api/core-api.md
+              - MCP Protocol: api/mcp-protocol.md
+              - Plugin API: api/plugin-api.md
+              - Event API: api/event-api.md
+              - CLI Commands: api/cli-commands.md
+            - Development:
+              - Plugin Development: development/plugin-development.md
+            - Architecture: architecture/README.md
+          
+          plugins:
+            - search
+            - mermaid2
+          
+          markdown_extensions:
+            - admonition
+            - codehilite
+            - footnotes
+            - toc:
+                permalink: true
+            - pymdownx.superfences:
+                custom_fences:
+                  - name: mermaid
+                    class: mermaid
+                    format: !!python/name:pymdownx.superfences.fence_code_format
+          EOF
+          
+            # Create index page
+            mkdir -p docs_site
+            cat > docs_site/index.md << EOF
+          # XKit v3.0 Documentation
+          
+          Welcome to the comprehensive documentation for XKit v3.0 with Hybrid MCP Architecture!
+          
+          ## 🚀 Quick Start
+          
+          Get started with XKit in minutes:
+          
+          \`\`\`powershell
+          # Quick install
+          irm https://raw.githubusercontent.com/rootkit-original/WindowsPowerShell/main/install-xkit-v3.ps1 | iex
+          
+          # Verify installation
+          xkit version
+          xkit status
+          \`\`\`
+          
+          ## 📖 Documentation Structure
+          
+          - **[API Reference](api/core-api.md)** - Complete API documentation
+          - **[Plugin Development](development/plugin-development.md)** - Create custom plugins
+          - **[MCP Integration](api/mcp-protocol.md)** - Model Context Protocol
+          - **[CLI Commands](api/cli-commands.md)** - Command-line reference
+          
+          ## 🏗️ Architecture
+          
+          XKit v3.0 features a hybrid architecture:
+          
+          - **Python Core**: Business logic and advanced features
+          - **PowerShell Wrapper**: Minimal, fast shell integration
+          - **MCP Protocol**: Extensible server architecture
+          - **Plugin System**: Hot-reloadable modular components
+          - **Event-Driven**: Loose coupling via central event bus
+          
+          ## 🤝 Contributing
+          
+          We welcome contributions! See our [Contributing Guide](https://github.com/rootkit-original/WindowsPowerShell/blob/main/CONTRIBUTING.md).
+          
+          ## 📄 License
+          
+          XKit is open source software licensed under the [MIT License](https://github.com/rootkit-original/WindowsPowerShell/blob/main/LICENSE).
+          EOF
+          
+            # Copy existing docs
+            cp -r docs/* docs_site/ 2>/dev/null || true
+          fi
+          
+          echo "::endgroup::"
+
+      - name: 🚀 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs_site
+          cname: xkit.rootkit-original.dev  # Optional: custom domain
+
+  # Notification and Cleanup
+  post-release:
+    name: 📢 Post-Release Tasks
+    runs-on: ubuntu-latest
+    needs: [create-release, deploy-docs]
+    if: always() && needs.create-release.result == 'success'
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📢 Update README Badge
+        run: |
+          # Update version badge in README
+          sed -i "s/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${{ needs.prepare-release.outputs.version }}/g" README.md || true
+          
+          # Commit changes
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          git commit -m "📝 Update version badge to v${{ needs.prepare-release.outputs.version }}" || true
+          git push || true
+
+      - name: 🔔 Notify Community (Placeholder)
+        run: |
+          echo "::notice::🎉 XKit v${{ needs.prepare-release.outputs.version }} has been released!"
+          echo "::notice::📚 Documentation: https://rootkit-original.github.io/WindowsPowerShell/"
+          echo "::notice::📦 Release: https://github.com/rootkit-original/WindowsPowerShell/releases/tag/${{ needs.prepare-release.outputs.tag }}"
+          
+          # Here you could add notifications to:
+          # - Discord webhook
+          # - Slack channel
+          # - Email list
+          # - Twitter/social media
+          # - Package registries
+
+      - name: 🧹 Cleanup Artifacts
+        run: |
+          # Clean up temporary files
+          rm -f setup.py RELEASE_CHANGELOG.md || true
+
+  # Failure Handling
+  handle-failure:
+    name: ❌ Handle Release Failure
+    runs-on: ubuntu-latest
+    needs: [prepare-release, build-and-test, create-release]
+    if: failure()
+    
+    steps:
+      - name: ❌ Release Failed
+        run: |
+          echo "::error::Release pipeline failed!"
+          echo "::error::Please check the logs above for details."
+          echo "::notice::You can re-run individual jobs or trigger a new release."
+          
+          # Here you could add failure notifications
+          # - Create GitHub issue
+          # - Send alert to team
+          # - Rollback if necessary

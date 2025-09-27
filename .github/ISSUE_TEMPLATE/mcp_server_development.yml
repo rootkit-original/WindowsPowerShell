@@ -1,0 +1,368 @@
+name: 🔌 MCP Server Development
+description: Request help with MCP server development or integration
+title: "[MCP]: "
+labels: ["mcp", "server", "integration", "needs-review"]
+assignees:
+  - rootkit-original
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help with MCP (Model Context Protocol) server development or integration? This is the right place!
+
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: Request Type
+      description: What kind of MCP request is this?
+      options:
+        - MCP Server Development Help
+        - MCP Integration Issue
+        - MCP Server Idea/Request
+        - MCP Protocol Question
+        - MCP Performance Issue
+        - MCP Security Concern
+        - MCP Documentation Request
+    validations:
+      required: true
+
+  - type: dropdown
+    id: server-type
+    attributes:
+      label: MCP Server Type
+      description: What type of MCP server are you working with?
+      options:
+        - Internal XKit Server (Python)
+        - External Server (stdio)
+        - External Server (HTTP)
+        - External Server (WebSocket)
+        - Custom Protocol Implementation
+        - Third-party Server Integration
+    validations:
+      required: true
+
+  - type: textarea
+    id: server-description
+    attributes:
+      label: Server Description
+      description: Describe the MCP server or integration you're working on
+      placeholder: |
+        If developing a new server: What functionality will it provide?
+        If integrating existing server: Which server and what issues?
+        If requesting help: What are you trying to achieve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tools-and-functionality
+    attributes:
+      label: Tools and Functionality
+      description: What tools/operations should this MCP server provide?
+      placeholder: |
+        Tools to implement:
+        - tool-name-1: Description of what it does
+        - tool-name-2: Description of functionality
+        
+        Input/Output formats:
+        - Input: JSON schema or format
+        - Output: Expected response format
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Complexity Level
+      description: How complex is this MCP server?
+      options:
+        - Simple (few tools, basic operations)
+        - Medium (multiple tools, some state management)
+        - Complex (many tools, persistent state, external APIs)
+        - Very Complex (distributed, high-performance, advanced features)
+
+  - type: textarea
+    id: technical-requirements
+    attributes:
+      label: Technical Requirements
+      description: What are the technical requirements and constraints?
+      placeholder: |
+        Performance requirements:
+        - Expected request volume
+        - Response time requirements
+        
+        Integration requirements:
+        - External APIs to integrate
+        - Authentication/authorization needs
+        - State management requirements
+        
+        Deployment constraints:
+        - Runtime environment
+        - Security considerations
+        - Scalability needs
+
+  - type: checkboxes
+    id: protocol-features
+    attributes:
+      label: MCP Protocol Features
+      description: Which MCP protocol features do you need?
+      options:
+        - label: Tool calling (standard)
+        - label: Resource access
+        - label: Prompts and templates
+        - label: Sampling (LLM integration)
+        - label: Logging and monitoring
+        - label: Root listing
+        - label: Ping/health checks
+        - label: Custom extensions
+
+  - type: textarea
+    id: current-implementation
+    attributes:
+      label: Current Implementation
+      description: Share your current implementation or relevant code
+      placeholder: |
+        ```python
+        # Share your MCP server code or problematic sections
+        from mcp import MCPServer
+        
+        class MyMCPServer(MCPServer):
+            async def list_tools(self):
+                return [
+                    Tool(name="example", description="Example tool")
+                ]
+        ```
+      render: python
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: MCP Configuration
+      description: How is the server configured in XKit?
+      placeholder: |
+        ```json
+        {
+          "servers": {
+            "my-server": {
+              "type": "stdio",
+              "command": "python",
+              "args": ["-m", "my_server"],
+              "description": "My custom MCP server"
+            }
+          }
+        }
+        ```
+      render: json
+
+  - type: textarea
+    id: integration-challenges
+    attributes:
+      label: Integration Challenges
+      description: What specific challenges are you facing with MCP integration?
+      placeholder: |
+        Technical challenges:
+        - Connection issues (stdio/HTTP)
+        - Protocol compliance
+        - Error handling
+        - Performance optimization
+        - State management
+        - Testing and debugging
+
+  - type: checkboxes
+    id: external-dependencies
+    attributes:
+      label: External Dependencies
+      description: What external services or systems does this server integrate with?
+      options:
+        - label: File system operations
+        - label: Database access (SQL/NoSQL)
+        - label: REST APIs
+        - label: GraphQL APIs
+        - label: Git repositories
+        - label: Container platforms (Docker/K8s)
+        - label: Cloud services (AWS/Azure/GCP)
+        - label: AI/ML services
+        - label: Messaging systems
+        - label: Other MCP servers
+
+  - type: textarea
+    id: usage-examples
+    attributes:
+      label: Usage Examples
+      description: Show how the MCP server would be used from XKit
+      placeholder: |
+        ```powershell
+        # XKit command that uses MCP server
+        xkit mcp-call --server my-server --tool example-tool --args '{"param": "value"}'
+        
+        # Expected response
+        {
+          "content": [
+            {"type": "text", "text": "Tool execution result"}
+          ]
+        }
+        ```
+      render: markdown
+
+  - type: checkboxes
+    id: development-status
+    attributes:
+      label: Development Status
+      description: What's your current development status?
+      options:
+        - label: Planning phase - need architecture guidance
+        - label: Started development - need technical help
+        - label: Basic implementation complete - need testing
+        - label: Server working - need performance optimization
+        - label: Ready for production - need deployment help
+        - label: Existing server - need integration help
+
+  - type: dropdown
+    id: protocol-version
+    attributes:
+      label: MCP Protocol Version
+      description: Which MCP protocol version are you targeting?
+      options:
+        - "Latest/Current"
+        - "Specific version (please specify in description)"
+        - "Not sure - need guidance"
+
+  - type: textarea
+    id: testing-approach
+    attributes:
+      label: Testing and Validation
+      description: How are you testing the MCP server?
+      placeholder: |
+        Current testing approach:
+        - Unit tests for individual tools
+        - Integration tests with XKit
+        - Manual testing scenarios
+        - Performance testing
+        
+        Testing challenges:
+        - Protocol compliance validation
+        - Error condition testing
+        - Load testing
+        - Security testing
+
+  - type: checkboxes
+    id: help-needed
+    attributes:
+      label: Help Needed
+      description: What specific help are you looking for?
+      options:
+        - label: MCP protocol understanding
+        - label: Server architecture design
+        - label: XKit integration best practices
+        - label: Performance optimization
+        - label: Error handling strategies
+        - label: Testing and validation
+        - label: Security considerations
+        - label: Deployment and distribution
+        - label: Documentation and examples
+
+  - type: textarea
+    id: error-messages
+    attributes:
+      label: Error Messages (if applicable)
+      description: Share any error messages or logs
+      placeholder: |
+        Paste relevant error messages, stack traces, or log entries here...
+      render: text
+
+  - type: textarea
+    id: performance-concerns
+    attributes:
+      label: Performance Considerations
+      description: Any specific performance requirements or concerns?
+      placeholder: |
+        Performance requirements:
+        - Expected concurrent requests
+        - Response time targets
+        - Memory usage constraints
+        - CPU usage considerations
+        
+        Observed performance issues:
+        - Slow response times
+        - Memory leaks
+        - High CPU usage
+        - Connection timeouts
+
+  - type: dropdown
+    id: deployment-target
+    attributes:
+      label: Deployment Target
+      description: Where will this MCP server be deployed?
+      options:
+        - Local development machine
+        - Corporate network/intranet
+        - Cloud platform (AWS/Azure/GCP)
+        - Container platform (Docker/K8s)
+        - Edge/IoT devices
+        - Multiple environments
+        - Not decided yet
+
+  - type: textarea
+    id: security-considerations
+    attributes:
+      label: Security Considerations
+      description: What security aspects are important for your server?
+      placeholder: |
+        Security requirements:
+        - Authentication mechanisms
+        - Authorization/access control
+        - Data encryption
+        - API key management
+        - Network security
+        
+        Compliance requirements:
+        - GDPR, HIPAA, SOC2, etc.
+        - Corporate security policies
+        - Industry regulations
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information
+      placeholder: |
+        Related projects or references:
+        - Similar MCP servers
+        - Documentation references
+        - Community discussions
+        
+        Business context:
+        - Use cases and scenarios
+        - Target users
+        - Success criteria
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🔌 MCP Development Resources
+        
+        - **[MCP Protocol Documentation](../docs/api/mcp-protocol.md)** - XKit MCP integration guide
+        - **[Official MCP Specification](https://modelcontextprotocol.io/)** - MCP protocol specification
+        - **[MCP Server Examples](../examples/mcp-servers/)** - Sample server implementations
+        - **[XKit MCP Servers](../Scripts/xkit/mcp/servers/)** - Built-in server code
+        
+        ### 🛠️ Development Tools
+        
+        - **MCP Inspector** - Protocol debugging tool
+        - **XKit MCP Client** - Testing and validation
+        - **Server Templates** - Boilerplate code for new servers
+        
+        ### 🤝 Community Support
+        
+        - **[MCP Community](https://github.com/modelcontextprotocol/community)** - Official MCP community
+        - **[XKit Discussions](../discussions)** - XKit-specific MCP discussions
+        
+        ### 📚 Learning Resources
+        
+        - **[MCP Quickstart Guide](https://modelcontextprotocol.io/quickstart)**
+        - **[Protocol Deep Dive](https://modelcontextprotocol.io/docs)**
+        - **[Best Practices](../docs/mcp-best-practices.md)**
+        
+        Thank you for expanding the MCP ecosystem! 🚀
