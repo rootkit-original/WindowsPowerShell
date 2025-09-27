@@ -1,0 +1,25 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/rootkit-original/WindowsPowerShell/discussions
+    about: Ask questions, share ideas, and discuss XKit with the community
+
+  - name: 📚 Documentation
+    url: https://github.com/rootkit-original/WindowsPowerShell/tree/develop/docs
+    about: Browse comprehensive documentation for XKit v3.0
+
+  - name: 🧩 Plugin Development Guide
+    url: https://github.com/rootkit-original/WindowsPowerShell/blob/develop/docs/development/plugin-development.md
+    about: Complete guide for developing XKit plugins
+
+  - name: 🔌 MCP Protocol Documentation  
+    url: https://github.com/rootkit-original/WindowsPowerShell/blob/develop/docs/api/mcp-protocol.md
+    about: Learn about MCP server development and integration
+
+  - name: 🚀 Quick Start Guide
+    url: https://github.com/rootkit-original/WindowsPowerShell#-instalação-rápida
+    about: Get started with XKit v3.0 in minutes
+
+  - name: ❓ FAQ & Troubleshooting
+    url: https://github.com/rootkit-original/WindowsPowerShell/blob/develop/TROUBLESHOOTING.md
+    about: Common issues and solutions

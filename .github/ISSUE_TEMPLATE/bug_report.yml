@@ -1,0 +1,166 @@
+name: 🐛 Bug Report
+description: Report a bug in XKit v3.0
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees:
+  - rootkit-original
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the following information to help us diagnose and fix the issue.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the bug you encountered...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+      placeholder: Describe what should have happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the issue
+      placeholder: |
+        1. Execute command '...'
+        2. With arguments '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which XKit component is affected?
+      options:
+        - Core System
+        - MCP Integration
+        - Plugin System
+        - Event System
+        - Git Operations
+        - AI Integration
+        - PowerShell Integration
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical (System unusable)
+        - High (Major feature broken)
+        - Medium (Minor feature affected)
+        - Low (Cosmetic/minor issue)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: |
+        Please run `xkit debug` and paste the output here, or provide the following information manually:
+      placeholder: |
+        - XKit Version: 
+        - Python Version:
+        - PowerShell Version:
+        - Operating System:
+        - Architecture (x64/x86):
+        - Git Version:
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Output
+      description: Full error message and stack trace (if applicable)
+      placeholder: Paste the complete error output here...
+      render: text
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Any relevant log entries (check XKit logs for additional context)
+      placeholder: Paste relevant log entries here...
+      render: text
+
+  - type: checkboxes
+    id: plugins
+    attributes:
+      label: Plugin Information
+      description: Are you using any plugins that might be related to this issue?
+      options:
+        - label: Using custom plugins
+        - label: Using third-party plugins
+        - label: Issue occurs without any plugins loaded
+        - label: Issue is plugin-specific
+
+  - type: textarea
+    id: plugin-list
+    attributes:
+      label: Active Plugins
+      description: If using plugins, please list them (run `xkit plugin-list`)
+      placeholder: |
+        - plugin-name v1.0.0
+        - another-plugin v2.1.0
+      render: text
+
+  - type: checkboxes
+    id: additional-context
+    attributes:
+      label: Additional Context
+      options:
+        - label: This is a regression (worked in previous version)
+        - label: This happens consistently
+        - label: This happens intermittently
+        - label: This only happens with specific commands
+        - label: This only happens in certain environments
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any workaround for this issue?
+      placeholder: Describe any workarounds you've discovered...
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any other context, screenshots, or information that might help
+      placeholder: Add any other helpful information...
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🔍 Before Submitting
+        
+        Please ensure you have:
+        - [ ] Searched existing issues to avoid duplicates
+        - [ ] Updated to the latest XKit version
+        - [ ] Tried reproducing with minimal configuration
+        - [ ] Included all requested information above
+        
+        Thank you for helping improve XKit! 🚀

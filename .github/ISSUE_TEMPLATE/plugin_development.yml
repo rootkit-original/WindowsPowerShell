@@ -1,0 +1,282 @@
+name: 🧩 Plugin Development Request
+description: Request help with plugin development or report plugin-related issues
+title: "[Plugin]: "
+labels: ["plugin", "development", "needs-review"]
+assignees:
+  - rootkit-original
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help with XKit plugin development? Want to share a plugin idea? Report plugin issues here!
+
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: Request Type
+      description: What kind of plugin request is this?
+      options:
+        - Plugin Development Help
+        - Plugin Idea/Request
+        - Plugin Bug Report
+        - Plugin Enhancement
+        - Plugin Documentation
+        - Plugin Integration Issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: plugin-description
+    attributes:
+      label: Plugin Description
+      description: Describe the plugin or issue
+      placeholder: |
+        If requesting a new plugin: Describe what the plugin should do
+        If reporting an issue: Describe the problem you're experiencing
+        If seeking help: Describe what you're trying to achieve
+    validations:
+      required: true
+
+  - type: dropdown
+    id: plugin-category
+    attributes:
+      label: Plugin Category
+      description: What category does this plugin fit into?
+      options:
+        - Git Operations
+        - AI Integration
+        - Development Tools
+        - System Utilities
+        - Project Management
+        - Code Analysis
+        - Automation
+        - Notifications
+        - External Services
+        - Entertainment/Fun
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: functionality
+    attributes:
+      label: Desired Functionality
+      description: What commands/features should this plugin provide?
+      placeholder: |
+        Commands to provide:
+        - command-name-1: Description
+        - command-name-2: Description
+        
+        Features:
+        - Feature 1
+        - Feature 2
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: plugin-complexity
+    attributes:
+      label: Plugin Complexity
+      description: How complex do you think this plugin should be?
+      options:
+        - label: Simple (basic commands, minimal dependencies)
+        - label: Medium (multiple commands, some external APIs)
+        - label: Complex (extensive functionality, multiple services)
+
+  - type: textarea
+    id: xkit-integration
+    attributes:
+      label: XKit Integration Requirements
+      description: What XKit services does this plugin need?
+      placeholder: |
+        Required services:
+        - git_service (for Git operations)
+        - ai_service (for AI features)
+        - display_service (for UI)
+        
+        Event subscriptions:
+        - CommandExecutedEvent
+        - GitOperationEvent
+        
+        MCP integration:
+        - Needs custom MCP server: Yes/No
+      render: markdown
+
+  - type: textarea
+    id: external-dependencies
+    attributes:
+      label: External Dependencies
+      description: What external services, APIs, or packages would be needed?
+      placeholder: |
+        Python packages:
+        - requests>=2.28.0
+        - beautifulsoup4>=4.11.0
+        
+        External APIs:
+        - GitHub API (for repository operations)
+        - OpenAI API (for AI features)
+        
+        System requirements:
+        - Git (for version control)
+        - Docker (for containerization)
+
+  - type: textarea
+    id: usage-examples
+    attributes:
+      label: Usage Examples
+      description: Show how the plugin would be used
+      placeholder: |
+        ```powershell
+        # Basic command usage
+        xkit plugin-command arg1 arg2
+        
+        # With options
+        xkit plugin-command --option value --flag
+        
+        # Example output
+        ✅ Plugin operation completed successfully
+        ```
+      render: markdown
+
+  - type: checkboxes
+    id: development-status
+    attributes:
+      label: Development Status
+      description: What's your current status with this plugin?
+      options:
+        - label: Just an idea - need help getting started
+        - label: Started development - need technical help
+        - label: Plugin mostly complete - need testing/feedback
+        - label: Plugin complete - want to share with community
+        - label: Existing plugin with issues - need bug fixes
+        - label: Want to enhance existing plugin
+
+  - type: textarea
+    id: current-code
+    attributes:
+      label: Current Code (if applicable)
+      description: If you've started development, share relevant code snippets
+      placeholder: |
+        ```python
+        # Share your current plugin code or problematic sections
+        class MyPlugin(XKitPlugin):
+            def __init__(self):
+                # Plugin implementation
+                pass
+        ```
+      render: python
+
+  - type: textarea
+    id: technical-challenges
+    attributes:
+      label: Technical Challenges
+      description: What specific technical challenges are you facing?
+      placeholder: |
+        - How to integrate with specific XKit service
+        - Error handling best practices
+        - Async programming patterns
+        - Testing strategies
+        - Configuration management
+
+  - type: checkboxes
+    id: help-needed
+    attributes:
+      label: Help Needed
+      description: What kind of help are you looking for?
+      options:
+        - label: Architecture and design guidance
+        - label: XKit API usage help
+        - label: Code review and feedback
+        - label: Testing and debugging assistance
+        - label: Documentation and examples
+        - label: Performance optimization
+        - label: Security best practices
+        - label: Plugin distribution and packaging
+
+  - type: dropdown
+    id: timeline
+    attributes:
+      label: Timeline
+      description: What's your expected timeline for this plugin?
+      options:
+        - "ASAP - Urgent need"
+        - "Within 1 week"
+        - "Within 1 month"
+        - "Within 3 months"
+        - "No specific timeline"
+        - "Just exploring ideas"
+
+  - type: checkboxes
+    id: sharing-intent
+    attributes:
+      label: Sharing Intent
+      description: Do you plan to share this plugin with the community?
+      options:
+        - label: Open source plugin for XKit community
+        - label: Private/internal plugin for my organization
+        - label: Commercial plugin (paid)
+        - label: Educational/learning project
+        - label: Undecided
+
+  - type: textarea
+    id: similar-tools
+    attributes:
+      label: Similar Tools/Plugins
+      description: Are there similar plugins or tools that inspired this request?
+      placeholder: |
+        Similar plugins in other tools:
+        - Tool X has feature Y that works like...
+        - Plugin Z for Tool A provides...
+        
+        Links to references:
+        - https://example.com/similar-tool
+
+  - type: textarea
+    id: environment-info
+    attributes:
+      label: Development Environment
+      description: What's your development setup?
+      placeholder: |
+        - XKit Version: 
+        - Python Version:
+        - Development OS:
+        - IDE/Editor:
+        - Git experience level:
+        - Python experience level:
+      render: text
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: |
+        Use cases:
+        Target users:
+        Success criteria:
+        Related issues:
+        Screenshots/mockups:
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🧩 Plugin Development Resources
+        
+        - **[Plugin Development Guide](../docs/development/plugin-development.md)** - Comprehensive development guide
+        - **[Plugin API Reference](../docs/api/plugin-api.md)** - Complete API documentation  
+        - **[Example Plugins](../examples/plugins/)** - Sample plugin implementations
+        - **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to XKit
+        
+        ### 🤝 Community Support
+        
+        - **[Discussions](../discussions)** - Community discussions and Q&A
+        - **[Discord/Chat]()** - Real-time community support
+        - **[Wiki](../wiki)** - Community-maintained documentation
+        
+        ### 💡 Plugin Ideas Welcome!
+        
+        Even if you can't implement the plugin yourself, sharing ideas helps the community identify needs and priorities.
+        
+        Thank you for contributing to the XKit plugin ecosystem! 🚀
