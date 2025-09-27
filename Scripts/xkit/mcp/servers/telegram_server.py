@@ -830,134 +830,430 @@ class TelegramMCPServer(MCPServer):
 🚀 **XKit v3.0 - Hybrid MCP Architecture**
 Desenvolvido com ❤️ para desenvolvedores"""
     
-    async def _simple_project_analysis(self, project_path: str) -> str:
-        """Análise simplificada de projeto"""
+    async def _enhanced_project_analysis(self, project_path: str) -> str:
+        """Análise avançada de projeto com Git, configs e formatação Telegram"""
         try:
+            import json
+            import subprocess
             from pathlib import Path
             import os
             
-            path = Path(project_path)
+            path = Path(project_path).resolve()
             if not path.exists():
                 return f"❌ Caminho não encontrado: {project_path}"
             
-            # Contadores básicos
+            # === ANÁLISE DE ARQUIVOS ===
             total_files = 0
             source_files = 0
             doc_files = 0
             config_files = 0
+            test_files = 0
             
-            # Extensões conhecidas
-            source_exts = {'.py', '.js', '.ts', '.java', '.cs', '.cpp', '.c', '.go', '.rs', '.php'}
-            doc_exts = {'.md', '.txt', '.rst', '.adoc'}
-            config_exts = {'.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf'}
+            # Extensões por categoria
+            source_exts = {'.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.cs', '.cpp', '.c', '.go', '.rs', '.php', '.rb', '.kt', '.swift'}
+            doc_exts = {'.md', '.txt', '.rst', '.adoc', '.wiki'}
+            config_exts = {'.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.xml', '.env'}
+            test_exts = {'.test.', '.spec.', '_test.', '_spec.'}
             
-            # Tecnologias detectadas
+            # Tecnologias e frameworks detectados
             technologies = set()
+            frameworks = set()
+            config_analysis = []
             
             # Percorrer arquivos
             for root, dirs, files in os.walk(path):
                 # Ignorar diretórios comuns
-                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in {'node_modules', '__pycache__', 'target', 'build'}]
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in {
+                    'node_modules', '__pycache__', 'target', 'build', 'dist', 'venv', 'env'
+                }]
                 
                 for file in files:
-                    if file.startswith('.'):
+                    if file.startswith('.') and file not in {'.env', '.gitignore', '.dockerignore'}:
                         continue
                         
                     total_files += 1
                     file_path = Path(root) / file
                     ext = file_path.suffix.lower()
                     
-                    if ext in source_exts:
+                    # Classificar arquivo
+                    if any(test in file.lower() for test in test_exts):
+                        test_files += 1
+                    elif ext in source_exts:
                         source_files += 1
                         
-                        # Detectar tecnologias
-                        if ext == '.py':
-                            technologies.add('Python')
-                        elif ext in {'.js', '.ts'}:
-                            technologies.add('JavaScript/TypeScript')
-                        elif ext == '.java':
-                            technologies.add('Java')
-                        elif ext == '.cs':
-                            technologies.add('C#')
-                        elif ext in {'.cpp', '.c'}:
-                            technologies.add('C/C++')
-                        elif ext == '.go':
-                            technologies.add('Go')
-                        elif ext == '.rs':
-                            technologies.add('Rust')
+                        # Detectar tecnologias por extensão
+                        tech_map = {
+                            '.py': 'Python', '.js': 'JavaScript', '.ts': 'TypeScript',
+                            '.jsx': 'React', '.tsx': 'React TypeScript', '.java': 'Java',
+                            '.cs': 'C#', '.cpp': 'C++', '.c': 'C', '.go': 'Go',
+                            '.rs': 'Rust', '.php': 'PHP', '.rb': 'Ruby', '.kt': 'Kotlin',
+                            '.swift': 'Swift'
+                        }
+                        if ext in tech_map:
+                            technologies.add(tech_map[ext])
                             
                     elif ext in doc_exts:
                         doc_files += 1
-                    elif ext in config_exts:
+                    elif ext in config_exts or file.lower() in {
+                        'dockerfile', 'makefile', 'rakefile', 'gemfile'
+                    }:
                         config_files += 1
+                    
+                    # === ANÁLISE ESPECÍFICA DE CONFIGS ===
+                    await self._analyze_config_file(file_path, config_analysis, frameworks)
+            
+            # === ANÁLISE GIT AVANÇADA ===
+            git_info = await self._analyze_git_status(path)
+            
+            # === CALCULAR SCORE INTELIGENTE ===
+            score = await self._calculate_project_score(
+                source_files, doc_files, config_files, test_files, git_info, frameworks
+            )
+            
+            # === FORMATAÇÃO TELEGRAM AVANÇADA ===
+            return await self._format_enhanced_report(
+                path, score, total_files, source_files, doc_files, 
+                config_files, test_files, technologies, frameworks, 
+                config_analysis, git_info
+            )
+            
+        except Exception as e:
+            return f"❌ Erro na análise avançada: {str(e)}"
+    
+    async def _analyze_config_file(self, file_path: Path, config_analysis: list, frameworks: set):
+        """Analisa arquivos de configuração específicos"""
+        try:
+            file_name = file_path.name.lower()
+            
+            # Package.json (Node.js/JavaScript)
+            if file_name == 'package.json':
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        package_data = json.load(f)
+                    
+                    # Detectar frameworks
+                    deps = {**package_data.get('dependencies', {}), **package_data.get('devDependencies', {})}
+                    
+                    if 'react' in deps or 'next' in deps:
+                        frameworks.add('React/Next.js')
+                    if 'vue' in deps or 'nuxt' in deps:
+                        frameworks.add('Vue.js/Nuxt')
+                    if 'angular' in deps or '@angular/core' in deps:
+                        frameworks.add('Angular')
+                    if 'express' in deps:
+                        frameworks.add('Express.js')
+                    if 'nestjs' in deps or '@nestjs/core' in deps:
+                        frameworks.add('NestJS')
+                    
+                    config_analysis.append(f"📦 Node.js: v{package_data.get('version', 'unknown')}")
+                    if 'scripts' in package_data:
+                        config_analysis.append(f"🔧 Scripts: {len(package_data['scripts'])}")
                         
-                    # Detectar arquivos especiais
-                    if file.lower() in {'package.json', 'requirements.txt', 'cargo.toml', 'go.mod', 'pom.xml'}:
-                        config_files += 1
+                except Exception:
+                    config_analysis.append("📦 package.json: ⚠️ erro de leitura")
             
-            # Verificar Git
-            has_git = (path / '.git').exists()
+            # Cargo.toml (Rust)
+            elif file_name == 'cargo.toml':
+                try:
+                    # Leitura simples sem biblioteca TOML
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    frameworks.add('Rust/Cargo')
+                    
+                    # Extração simples da versão
+                    import re
+                    version_match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
+                    if version_match:
+                        version = version_match.group(1)
+                        config_analysis.append(f"🦀 Rust: v{version}")
+                    else:
+                        config_analysis.append("🦀 Rust: Cargo.toml")
+                        
+                except Exception:
+                    config_analysis.append("🦀 Cargo.toml: ⚠️ erro de leitura")
             
-            # Calcular score básico
-            score = 5  # Base
-            if source_files > 0:
-                score += 2
-            if doc_files > 0:
-                score += 1
-            if has_git:
-                score += 1
-            if config_files > 0:
-                score += 1
+            # Requirements.txt (Python)
+            elif file_name == 'requirements.txt':
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        reqs = f.readlines()
+                    
+                    # Detectar frameworks Python
+                    req_text = ' '.join(reqs).lower()
+                    if 'django' in req_text:
+                        frameworks.add('Django')
+                    if 'flask' in req_text:
+                        frameworks.add('Flask')
+                    if 'fastapi' in req_text:
+                        frameworks.add('FastAPI')
+                    if 'streamlit' in req_text:
+                        frameworks.add('Streamlit')
+                    
+                    config_analysis.append(f"🐍 Python deps: {len([r for r in reqs if r.strip() and not r.startswith('#')])}")
+                    
+                except Exception:
+                    config_analysis.append("🐍 requirements.txt: ⚠️ erro de leitura")
             
-            # Emojis baseados no score
-            score_emoji = "🟢" if score >= 8 else "🟡" if score >= 6 else "🔴"
+            # Pyproject.toml (Python moderno)
+            elif file_name == 'pyproject.toml':
+                frameworks.add('Python/Poetry')
+                config_analysis.append("🐍 Python: pyproject.toml")
             
-            # Formatação do relatório
-            report = [
-                f"📊 **Análise Rápida: {path.name}**",
-                f"{score_emoji} **Score: {score}/10**",
-                "",
-                "📈 **Métricas:**",
-                f"📁 Total de arquivos: {total_files}",
-                f"💻 Código fonte: {source_files}",
-                f"📚 Documentação: {doc_files}",
-                f"⚙️ Configuração: {config_files}",
-                f"🌿 Git: {'✅ Sim' if has_git else '❌ Não'}",
+            # Compose files
+            elif 'docker-compose' in file_name:
+                frameworks.add('Docker Compose')
+                config_analysis.append("🐳 Docker Compose")
+            
+            # Kubernetes
+            elif file_name.endswith(('.yaml', '.yml')) and any(k in file_name for k in ['k8s', 'kubernetes', 'deployment']):
+                frameworks.add('Kubernetes')
+                config_analysis.append("☸️ Kubernetes")
+                
+        except Exception:
+            pass  # Ignorar erros de análise individual
+    
+    async def _analyze_git_status(self, path: Path) -> dict:
+        """Análise avançada do status Git"""
+        git_info = {
+            'has_git': False,
+            'branch': None,
+            'uncommitted_files': 0,
+            'untracked_files': 0,
+            'ahead': 0,
+            'behind': 0,
+            'remote_status': 'unknown',
+            'last_commit': None,
+            'status_details': []
+        }
+        
+        try:
+            if not (path / '.git').exists():
+                return git_info
+            
+            git_info['has_git'] = True
+            
+            # Branch atual
+            try:
+                result = subprocess.run(['git', 'branch', '--show-current'], 
+                                      capture_output=True, text=True, cwd=path, timeout=5)
+                if result.returncode == 0:
+                    git_info['branch'] = result.stdout.strip()
+            except:
+                pass
+            
+            # Status de arquivos
+            try:
+                result = subprocess.run(['git', 'status', '--porcelain'], 
+                                      capture_output=True, text=True, cwd=path, timeout=5)
+                if result.returncode == 0:
+                    status_lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
+                    
+                    for line in status_lines:
+                        if line.startswith('??'):
+                            git_info['untracked_files'] += 1
+                        elif line.strip():
+                            git_info['uncommitted_files'] += 1
+                            
+                        # Detalhes para formatação
+                        if len(git_info['status_details']) < 5:  # Máximo 5 para Telegram
+                            status_char = line[:2] if len(line) >= 2 else '??'
+                            filename = line[3:] if len(line) > 3 else line
+                            git_info['status_details'].append((status_char, filename))
+            except:
+                pass
+            
+            # Status de sincronização com remote
+            try:
+                result = subprocess.run(['git', 'status', '--branch', '--porcelain=v1'], 
+                                      capture_output=True, text=True, cwd=path, timeout=5)
+                if result.returncode == 0:
+                    first_line = result.stdout.split('\n')[0] if result.stdout else ''
+                    if 'ahead' in first_line:
+                        import re
+                        match = re.search(r'ahead (\d+)', first_line)
+                        if match:
+                            git_info['ahead'] = int(match.group(1))
+                    if 'behind' in first_line:
+                        import re
+                        match = re.search(r'behind (\d+)', first_line)
+                        if match:
+                            git_info['behind'] = int(match.group(1))
+            except:
+                pass
+            
+            # Último commit
+            try:
+                result = subprocess.run(['git', 'log', '--oneline', '-1'], 
+                                      capture_output=True, text=True, cwd=path, timeout=5)
+                if result.returncode == 0 and result.stdout.strip():
+                    git_info['last_commit'] = result.stdout.strip()[:50]  # Limitar para Telegram
+            except:
+                pass
+                
+        except Exception:
+            pass
+        
+        return git_info
+    
+    async def _calculate_project_score(self, source_files, doc_files, config_files, test_files, git_info, frameworks):
+        """Calcula score inteligente do projeto"""
+        score = 0
+        
+        # Base por estrutura
+        if source_files > 0:
+            score += 3
+        if doc_files > 0:
+            score += 2
+        if config_files > 0:
+            score += 1
+        if test_files > 0:
+            score += 2  # Testes são importantes
+        
+        # Git e versionamento
+        if git_info['has_git']:
+            score += 1
+            if git_info['uncommitted_files'] == 0 and git_info['untracked_files'] == 0:
+                score += 1  # Repositório limpo
+        
+        # Frameworks modernos
+        if frameworks:
+            score += 1
+        
+        return min(score, 10)  # Máximo 10
+    
+    async def _format_enhanced_report(self, path, score, total_files, source_files, doc_files, 
+                                    config_files, test_files, technologies, frameworks, 
+                                    config_analysis, git_info):
+        """Formatar relatório avançado para Telegram"""
+        
+        # Emoji baseado no score
+        score_emoji = "🟢" if score >= 8 else "🟡" if score >= 6 else "🔴"
+        
+        report = [
+            f"📊 **Análise Avançada: {path.name}**",
+            f"{score_emoji} **Score: {score}/10**",
+            ""
+        ]
+        
+        # === SEÇÃO DE MÉTRICAS ===
+        metrics_code = f"""📈 Métricas do Projeto:
+📁 Total: {total_files} arquivos
+💻 Código: {source_files} arquivos  
+🧪 Testes: {test_files} arquivos
+� Docs: {doc_files} arquivos
+⚙️ Config: {config_files} arquivos"""
+        
+        report.extend([
+            "```",
+            metrics_code,
+            "```",
+            ""
+        ])
+        
+        # === SEÇÃO GIT (FORMATADA) ===
+        if git_info['has_git']:
+            git_status_code = f"""🌿 Status Git:
+� Branch: {git_info['branch'] or 'unknown'}
+📝 Não commitados: {git_info['uncommitted_files']}
+❓ Não rastreados: {git_info['untracked_files']}"""
+            
+            # Adicionar status de sincronização
+            if git_info['ahead'] > 0:
+                git_status_code += f"\n⬆️ Ahead: {git_info['ahead']} commits"
+            if git_info['behind'] > 0:
+                git_status_code += f"\n⬇️ Behind: {git_info['behind']} commits"
+                
+            if git_info['last_commit']:
+                git_status_code += f"\n📌 Último: {git_info['last_commit']}"
+            
+            report.extend([
+                "```",
+                git_status_code,
+                "```"
+            ])
+            
+            # Detalhes de arquivos não commitados
+            if git_info['status_details']:
+                report.append("⚠️ **Arquivos pendentes:**")
+                for status_char, filename in git_info['status_details'][:3]:
+                    status_emoji = "📝" if status_char.strip() in ['M', 'A'] else "❓" if status_char.strip() == "??" else "🔄"
+                    report.append(f"`{status_emoji} {filename[:40]}{'...' if len(filename) > 40 else ''}`")
+                
+                if len(git_info['status_details']) > 3:
+                    report.append(f"_... e mais {len(git_info['status_details']) - 3} arquivos_")
+                report.append("")
+        else:
+            report.extend([
+                "❌ **Git não inicializado**",
+                "_Considere: `git init`_",
                 ""
-            ]
+            ])
+        
+        # === TECNOLOGIAS E FRAMEWORKS ===
+        if technologies or frameworks:
+            tech_list = list(technologies)[:3]
+            framework_list = list(frameworks)[:3]
             
-            # Adicionar tecnologias
-            if technologies:
-                tech_list = list(technologies)[:3]  # Máximo 3
+            if tech_list:
                 report.append("🛠️ **Tecnologias:**")
                 for tech in tech_list:
                     report.append(f"• {tech}")
-                report.append("")
             
-            # Sugestões básicas
-            suggestions = []
-            if not has_git:
-                suggestions.append("Inicializar repositório Git")
-            if doc_files == 0:
-                suggestions.append("Adicionar documentação (README.md)")
-            if source_files == 0:
-                suggestions.append("Adicionar código fonte")
-                
-            if suggestions:
-                report.append("💡 **Sugestões:**")
-                for suggestion in suggestions[:3]:
-                    report.append(f"• {suggestion}")
-                report.append("")
+            if framework_list:
+                if tech_list:
+                    report.append("")
+                report.append("🚀 **Frameworks:**")
+                for framework in framework_list:
+                    report.append(f"• {framework}")
             
-            report.extend([
-                f"🕒 **Analisado:** {datetime.now().strftime('%H:%M:%S')}",
-                "🚀 **XKit v3.0 - Análise Rápida**"
-            ])
-            
-            return "\n".join(report)
-            
-        except Exception as e:
-            return f"❌ Erro na análise: {str(e)}"
+            report.append("")
+        
+        # === ANÁLISE DE CONFIGURAÇÕES ===
+        if config_analysis:
+            report.append("⚙️ **Configurações detectadas:**")
+            for config in config_analysis[:4]:  # Máximo 4 para não poluir
+                report.append(f"• {config}")
+            report.append("")
+        
+        # === SUGESTÕES INTELIGENTES ===
+        suggestions = []
+        
+        if not git_info['has_git']:
+            suggestions.append("🌿 Inicializar Git: `git init`")
+        elif git_info['uncommitted_files'] > 0:
+            suggestions.append(f"📝 Commitar {git_info['uncommitted_files']} arquivos pendentes")
+        
+        if git_info['ahead'] > 0:
+            suggestions.append(f"⬆️ Push {git_info['ahead']} commits: `git push`")
+        if git_info['behind'] > 0:
+            suggestions.append(f"⬇️ Pull {git_info['behind']} commits: `git pull`")
+        
+        if doc_files == 0:
+            suggestions.append("📚 Adicionar README.md")
+        if test_files == 0 and source_files > 0:
+            suggestions.append("🧪 Implementar testes")
+        if config_files == 0 and source_files > 0:
+            suggestions.append("⚙️ Adicionar arquivos de configuração")
+        
+        if suggestions:
+            report.append("💡 **Sugestões:**")
+            for suggestion in suggestions[:4]:  # Máximo 4
+                report.append(f"• {suggestion}")
+            report.append("")
+        
+        # === FOOTER ===
+        report.extend([
+            f"🕒 **Analisado:** {datetime.now().strftime('%H:%M:%S')}",
+            "🚀 **XKit v3.0 - Análise Avançada**"
+        ])
+        
+        return "\n".join(report)
+    
+    # Manter compatibilidade (alias)
+    async def _simple_project_analysis(self, project_path: str) -> str:
+        """Alias para análise avançada (compatibilidade)"""
+        return await self._enhanced_project_analysis(project_path)
     
     async def shutdown(self):
         """Cleanup when server shuts down"""
