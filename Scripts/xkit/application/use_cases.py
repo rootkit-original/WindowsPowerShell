@@ -1,7 +1,9 @@
 """
 Application layer - Use cases and business logic orchestration
 """
-from typing import Optional
+import os
+import asyncio
+from typing import Optional, List, Dict, Any
 from pathlib import Path
 from ..domain import (
     DevelopmentContext, 
@@ -17,6 +19,75 @@ from ..domain import (
     IGitBranchManager,
     IXPilotAgent
 )
+from ..infrastructure.display import DisplayService
+
+
+class AnalyzeXKitProjectUseCase:
+    """Use case para analisar projetos .xkit"""
+    
+    def __init__(self, display_service: IDisplayService):
+        self.display = display_service
+
+    async def execute(self, path: str = None) -> None:
+        """Analisa um projeto .xkit"""
+        if not path:
+            path = os.getcwd()
+        
+        project_path = Path(path)
+        
+        # Verifica se é um projeto .xkit
+        xkit_file = project_path / ".xkit"
+        if not xkit_file.exists():
+            print("⚠️  Este diretório não contém um arquivo .xkit")
+            print("💡 Para criar um projeto .xkit, use: echo '{}' > .xkit")
+            return
+        
+        print(f"🔍 Analisando projeto .xkit: {project_path.name}")
+        print("=" * 50)
+        
+        # Análise básica
+        files = list(project_path.rglob("*"))
+        code_files = [f for f in files if f.suffix in ['.py', '.js', '.ts', '.ps1']]
+        
+        print(f"📁 Total de arquivos: {len(files)}")
+        print(f"💻 Arquivos de código: {len(code_files)}")
+        
+        # Verifica git
+        has_git = (project_path / ".git").exists()
+        print(f"📦 Git: {'✅' if has_git else '❌'}")
+        
+        # Verifica README
+        readme_files = [f for f in files if f.name.upper().startswith("README")]
+        has_readme = len(readme_files) > 0
+        print(f"📖 README: {'✅' if has_readme else '❌'}")
+        
+        # Score simples
+        score = 0
+        if has_git:
+            score += 3
+        if has_readme:
+            score += 2
+        if len(code_files) > 0:
+            score += 3
+        if len(files) > 5:
+            score += 2
+        
+        score_emoji = "🟢" if score >= 7 else "🟡" if score >= 4 else "🔴"
+        print(f"\n{score_emoji} Pontuação: {score}/10")
+        
+        # Sugestões
+        suggestions = []
+        if not has_git:
+            suggestions.append("🔧 Execute: git init")
+        if not has_readme:
+            suggestions.append("📝 Crie um arquivo README.md")
+        
+        if suggestions:
+            print("\n💡 Sugestões:")
+            for suggestion in suggestions:
+                print(f"  {suggestion}")
+        
+        print("\n✅ Análise concluída!")
 
 
 class AnalyzeProjectUseCase:

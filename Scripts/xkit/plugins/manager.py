@@ -12,6 +12,7 @@ from collections import defaultdict
 
 from .base import XKitPlugin, PluginMetadata, PluginStatus, PluginEvent
 from .loader import PluginLoader
+from .core import core_plugin_registry
 
 
 class PluginDependencyError(Exception):
@@ -64,6 +65,9 @@ class PluginManager:
         # Load core services first
         await self._initialize_core_services()
         
+        # Load core plugins
+        await self._load_core_plugins()
+        
         self.logger.info(f"Plugin Manager initialized with {len(self.plugin_directories)} directories")
     
     async def _initialize_core_services(self) -> None:
@@ -71,6 +75,13 @@ class PluginManager:
         self.services["logger"] = self.logger
         self.services["event_bus"] = None  # Will be set by event system
         self.services["mcp_client"] = None  # Will be set by MCP system
+    
+    async def _load_core_plugins(self) -> None:
+        """Load core plugins automatically"""
+        try:
+            await core_plugin_registry.load_all_core_plugins(self)
+        except Exception as e:
+            self.logger.error(f"Failed to load core plugins: {e}")
     
     async def discover_plugins(self) -> List[PluginMetadata]:
         """Discover all available plugins in plugin directories"""
@@ -364,6 +375,23 @@ class PluginManager:
                 self.logger.warning(f"Command {command_name} already registered, overriding")
             
             self.commands[command_name] = (plugin.metadata.name, handler)
+            
+            # Also register in global command service if available
+            try:
+                # Access command service from the container
+                if hasattr(self, '_command_service') and self._command_service:
+                    self._command_service.register_command(
+                        command_name, 
+                        handler,
+                        description=f"Plugin command from {plugin.metadata.name}",
+                        category=plugin.metadata.name
+                    )
+            except Exception as e:
+                self.logger.warning(f"Failed to register command {command_name} in command service: {e}")
+    
+    def set_command_service(self, command_service) -> None:
+        """Set the command service reference for plugin command registration"""
+        self._command_service = command_service
     
     async def _unregister_plugin_commands(self, plugin: XKitPlugin) -> None:
         """Unregister commands provided by a plugin"""

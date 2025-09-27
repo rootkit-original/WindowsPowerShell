@@ -1,0 +1,8 @@
+# XKit Project Configuration
+# This file marks a directory as a XKit-managed project
+{
+    "version": "1.0.0",
+    "project_type": "auto-detect",
+    "analysis_enabled": true,
+    "created_at": "2025-09-27T00:00:00Z"
+}

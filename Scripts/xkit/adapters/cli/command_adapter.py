@@ -108,6 +108,23 @@ class CommandAdapter(ICommandService):
                 "handler": self._handle_ai_suggest,
                 "description": "AI improvement suggestions",
                 "category": "ai"
+            },
+            
+            # Project Analysis commands
+            "analyze-project": {
+                "handler": self._handle_analyze_project,
+                "description": "Analyze .xkit project quality",
+                "category": "project"
+            },
+            "scan-xkit-projects": {
+                "handler": self._handle_scan_projects,
+                "description": "Scan for .xkit projects",
+                "category": "project"
+            },
+            "project-score": {
+                "handler": self._handle_project_score,
+                "description": "Get project quality score",
+                "category": "project"
             }
         }
         
@@ -739,3 +756,96 @@ Configure GEMINI_API_KEY to enable AI suggestions."""
                 
         except Exception as e:
             return f"❌ AI Service Error: {str(e)}"
+    
+    # Project Analysis Handlers
+    async def _handle_analyze_project(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle analyze-project command"""
+        try:
+            from ...application.use_cases import AnalyzeXKitProjectUseCase
+            
+            path = args[0] if args else None
+            use_case = AnalyzeXKitProjectUseCase(self.display_service)
+            
+            # Capture display output
+            import io
+            from contextlib import redirect_stdout
+            
+            output = io.StringIO()
+            with redirect_stdout(output):
+                await use_case.execute(path)
+            
+            return output.getvalue().strip() or "✅ Análise concluída"
+            
+        except Exception as e:
+            return f"❌ Erro na análise: {str(e)}"
+    
+    async def _handle_scan_projects(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle scan-xkit-projects command"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            base_path = Path(path)
+            
+            result = [f"🔍 Procurando projetos .xkit em: {base_path}"]
+            
+            xkit_projects = []
+            for root, dirs, files in os.walk(base_path):
+                if '.xkit' in files:
+                    xkit_projects.append(root)
+                    dirs.clear()
+            
+            if not xkit_projects:
+                result.append("⚠️  Nenhum projeto .xkit encontrado")
+                return "\n".join(result)
+                
+            result.append(f"📁 Encontrados {len(xkit_projects)} projetos .xkit:")
+            for project in xkit_projects:
+                project_name = os.path.basename(project)
+                result.append(f"  📂 {project_name}")
+            
+            return "\n".join(result)
+            
+        except Exception as e:
+            return f"❌ Erro no scan: {str(e)}"
+    
+    async def _handle_project_score(self, args: List[str], context: Dict[str, Any]) -> str:
+        """Handle project-score command"""
+        try:
+            import os
+            from pathlib import Path
+            
+            path = args[0] if args else os.getcwd()
+            project_path = Path(path)
+            
+            if not (project_path / '.xkit').exists():
+                return "❌ Este não é um projeto .xkit"
+            
+            # Cálculo básico de score
+            score = 0
+            files = list(project_path.rglob("*"))
+            
+            # Git (+3)
+            if (project_path / '.git').exists():
+                score += 3
+            
+            # README (+2)
+            readme_files = [f for f in files if f.name.upper().startswith('README')]
+            if readme_files:
+                score += 2
+                
+            # Código fonte (+3)
+            code_files = [f for f in files if f.suffix in ['.py', '.js', '.ts', '.ps1']]
+            if code_files:
+                score += 3
+                
+            # Estrutura (+2)
+            if len(files) > 5:
+                score += 2
+            
+            color_emoji = "🟢" if score >= 7 else "🟡" if score >= 4 else "🔴"
+            return f"{color_emoji} Pontuação do Projeto: {score}/10"
+            
+        except Exception as e:
+            return f"❌ Erro no cálculo: {str(e)}"
