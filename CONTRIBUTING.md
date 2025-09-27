@@ -1,70 +1,100 @@
-# 🤝 Como Contribuir - XKit v2.1
+# 🤝 Como Contribuir - XKit v3.0.0
 
-Obrigado pelo interesse em contribuir com o XKit! Este guia vai te orientar no processo.
+Obrigado pelo interesse em contribuir com o XKit v3.0.0! Este guia vai te orientar no desenvolvimento com a nova Hybrid MCP Architecture.
 
-## 🎯 Visão Geral
+## 🎯 Visão Geral v3.0.0
 
-O XKit segue **GitHub Flow Modificado** - veja [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md) para detalhes completos.
+O XKit v3.0.0 é uma plataforma de desenvolvimento moderna com:
 
-## 🌿 Workflow de Contribuição
+- 🔌 **Hybrid MCP Architecture** - Extensibilidade via Model Context Protocol
+- 🧩 **Plugin System** - Hot-reload e dependency injection
+- 📡 **Event-Driven Design** - Comunicação assíncrona via event bus
+- 🏗️ **Hexagonal Architecture** - Clean separation com ports/adapters
+- 🤖 **AI-First** - Gemini 2.0 Flash integrado nativamente
+
+## 🌿 Workflow de Contribuição v3.0.0
 
 ### 1. 🍴 Fork & Clone
 
 ```powershell
 # Fork no GitHub, depois clone
-git clone https://github.com/seu-usuario/xkit.git
-cd xkit
+git clone https://github.com/seu-usuario/WindowsPowerShell.git
+cd WindowsPowerShell
 
 # Adicione upstream
-git remote add upstream https://github.com/user/xkit.git
+git remote add upstream https://github.com/rootkit-original/WindowsPowerShell.git
 ```
 
 ### 2. 🎯 Escolha o Tipo de Contribuição
 
 | Tipo | Branch Base | Padrão de Nome | Exemplo |
 |------|-------------|----------------|---------|
-| **Nova funcionalidade** | `develop` | `feature/nome` | `feature/postman-integration` |
-| **Correção de bug** | `develop` | `fix/descrição` | `fix/error-handler-crash` |
-| **Documentação** | `develop` | `docs/área` | `docs/api-reference` |
-| **Refatoração** | `develop` | `refactor/área` | `refactor/clean-architecture` |
-| **Hotfix urgente** | `main` | `hotfix/versão-bug` | `hotfix/v2.1.3-memory-leak` |
+| **MCP Server** | `develop` | `feature/mcp-<server>` | `feature/mcp-github-server` |
+| **Plugin** | `develop` | `feature/plugin-<name>` | `feature/plugin-docker-compose` |
+| **AI Integration** | `develop` | `feature/ai-<feature>` | `feature/ai-code-review` |
+| **Core Architecture** | `develop` | `feature/core-<area>` | `feature/core-event-bus` |
+| **Bug Fix** | `develop` | `fix/descrição` | `fix/mcp-connection-timeout` |
+| **Documentation** | `develop` | `docs/área` | `docs/mcp-server-guide` |
+| **Hotfix** | `main` | `hotfix/v3.0.x-bug` | `hotfix/v3.0.1-startup-fail` |
 
 ### 3. 🚀 Criar Branch de Trabalho
 
 ```powershell
-# Para feature/fix/docs/refactor
+# Para features/fix/docs
 git checkout develop
 git pull upstream develop
-git checkout -b feature/minha-nova-funcionalidade
+git checkout -b feature/mcp-new-server
 
 # Para hotfix
 git checkout main  
 git pull upstream main
-git checkout -b hotfix/v2.1.3-fix-critico
+git checkout -b hotfix/v3.0.1-fix-critico
 ```
 
-### 4. 💻 Desenvolver
+### 4. 💻 Desenvolver com Hybrid MCP Architecture
 
-#### 🏗️ **Estrutura do Código**
-- **PowerShell**: Apenas ponte minimal em `oh-my-xkit/plugins/`
-- **Python**: Lógica de negócio em `Scripts/xkit/`
+#### 🏗️ **Estrutura do Código v3.0.0**
+- **PowerShell**: Minimal wrapper em `Microsoft.PowerShell_profile.ps1`
+- **Python Core**: Lógica em `Scripts/xkit/`
+  - `core/` - Domain & Application layers
+  - `adapters/` - External integrations  
+  - `mcp/` - MCP servers and client
+  - `plugins/` - Plugin system
+  - `events/` - Event-driven architecture
 - **Clean Architecture**: Domain/Application/Infrastructure
 
-#### 📝 **Padrão de Commits**
-Usamos **Conventional Commits**:
+#### 📝 **Padrão de Commits v3.0.0**
+Usamos **Conventional Commits** com escopos específicos:
 
 ```powershell
-# Formato: tipo(escopo): descrição
-git commit -m "feat(git): adicionar comando xrebase inteligente"
-git commit -m "fix(error): corrigir crash no sistema @xpilot"
-git commit -m "docs(api): atualizar referência do GitService"
-git commit -m "refactor(domain): extrair ErrorEntity para domain layer"
-git commit -m "chore(deps): atualizar dependências Python"
+# MCP-related
+git commit -m "feat(mcp): add GitHub integration MCP server"
+git commit -m "fix(mcp): resolve connection timeout issues"
+
+# Plugin system
+git commit -m "feat(plugins): implement hot-reload mechanism"
+git commit -m "fix(plugins): handle plugin loading errors"
+
+# Event system
+git commit -m "feat(events): add command execution events"
+git commit -m "fix(events): prevent event loop blocking"
+
+# AI integration
+git commit -m "feat(ai): add code review capabilities"
+git commit -m "fix(ai): handle Gemini API rate limits"
+
+# Core architecture
+git commit -m "feat(core): implement dependency injection container"
+git commit -m "refactor(core): migrate to hexagonal architecture"
 ```
 
-**Tipos permitidos:**
-- `feat` - Nova funcionalidade
-- `fix` - Correção de bug
+**Tipos e Escopos:**
+- `feat(mcp|plugins|events|ai|core)` - Nova funcionalidade
+- `fix(mcp|plugins|events|ai|core)` - Correção de bug
+- `docs(api|mcp|plugins|usage)` - Documentação
+- `refactor(core|adapters|infrastructure)` - Refatoração
+- `test(unit|integration|e2e)` - Testes
+- `chore(deps|config|build)` - Manutenção
 - `docs` - Documentação
 - `style` - Formatação de código
 - `refactor` - Refatoração sem mudança de funcionalidade
