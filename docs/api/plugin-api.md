@@ -209,10 +209,10 @@ for plugin in plugins:
 
 Plugins are automatically discovered in:
 
-- `Scripts/xkit/plugins/` - Core plugins
-- `~/.xkit/plugins/` - User plugins  
-- `./xkit-plugins/` - Project-specific plugins
-- Custom directories via configuration
+- `Scripts/xkit/plugins/` - Core plugins (primary location)
+- `Scripts/xkit/plugins/core/` - Essential system plugins
+- `oh-my-xkit/plugins/` - Framework extension plugins
+- Custom directories via PluginManager configuration
 
 ### Hot Reload Support
 
