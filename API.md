@@ -229,7 +229,7 @@ actions["my-action"] = my_custom_action
 
 #### 2. PowerShell Wrapper
 ```powershell
-# Add to profile or oh-my-xkit plugin
+# Add to profile or custom module
 function global:my-command {
     param([Parameter(ValueFromRemainingArguments)]$args)
     Invoke-XKit "my-action" @args

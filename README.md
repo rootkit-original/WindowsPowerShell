@@ -81,8 +81,7 @@ powershell
 XKit v3.0 Hybrid MCP Architecture
 ├── PowerShell Layer (Minimal)
 │   ├── Microsoft.PowerShell_profile.ps1  # Profile básico
-│   ├── xkit-v3.ps1                       # Wrapper principal
-│   └── oh-my-xkit/                       # Legacy plugins
+│   └── xkit.ps1                          # Command dispatcher
 ├── Python Core (Hexagonal)
 │   ├── xkit_main.py                      # Application entry point
 │   └── xkit/                             # Hexagonal Architecture
